@@ -36,23 +36,43 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Tajawal', sans-serif; background-color: var(--background-color); color: var(--text-primary); line-height: 1.6; }
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; font-size: 1.2rem; color: var(--text-primary); }
-        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: var(--primary-accent); margin-bottom: 1rem; animation: spin 1s ease infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* --- Login Screen Styles --- */
+        #login-screen {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            width: 100%; height: 100vh; background-color: var(--background-color);
+            text-align: center; padding: 2rem;
+        }
+        #login-screen img { max-width: 150px; margin-bottom: 2rem; border-radius: 20px; }
+        #login-screen h1 { font-size: 2.5rem; color: var(--text-primary); margin-bottom: 1rem; }
+        #login-screen p { font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 2.5rem; max-width: 500px; }
+        #google-signin-btn {
+            display: inline-flex; align-items: center; gap: 12px;
+            padding: 12px 24px; font-size: 1.1rem; font-weight: 700;
+            color: #fff; background-color: #4285F4; border: none;
+            border-radius: 8px; cursor: pointer; transition: background-color 0.3s;
+        }
+        #google-signin-btn:hover { background-color: #357ae8; }
+        #google-signin-btn svg { width: 24px; height: 24px; }
+
+        /* --- Main App Styles --- */
+        .hidden { display: none !important; }
         .container { display: flex; min-height: 100vh; }
         .sidebar { width: 260px; background: var(--sidebar-bg); color: var(--white-text); padding: 2rem 1rem; position: fixed; top: 0; right: 0; height: 100%; transition: transform 0.3s ease-in-out; z-index: 100; }
-        .sidebar .logo-container { text-align: center; margin-bottom: 2.5rem; }
+        .sidebar .logo-container { text-align: center; margin-bottom: 1.5rem; }
         .sidebar .logo { max-width: 80px; height: auto; border-radius: 50%; border: 3px solid var(--primary-accent); background-color: #fff; }
-        .sidebar h1 { text-align: center; margin-top: 0.5rem; font-size: 1.8rem; }
+        .sidebar h1 { text-align: center; margin-top: 0.5rem; font-size: 1.8rem; margin-bottom: 2rem; }
         .nav-menu ul { list-style-type: none; padding: 0; }
         .nav-menu li { margin-bottom: 0.5rem; }
         .nav-menu a { display: flex; align-items: center; padding: 0.9rem; color: var(--white-text); text-decoration: none; border-radius: 12px; transition: all 0.2s ease-in-out; font-size: 1.1rem; font-weight: 500; gap: 12px; }
         .nav-menu a:hover { background-color: rgba(255, 255, 255, 0.1); }
         .nav-menu a.active { background-color: var(--primary-accent); font-weight: 700; }
         .nav-menu a .icon { width: 24px; height: 24px; stroke-width: 2; }
-        .user-info { position: absolute; bottom: 1rem; right: 1rem; left: 1rem; background-color: rgba(0, 0, 0, 0.2); padding: 0.75rem; border-radius: 10px; text-align: center; font-size: 0.8rem; }
-        .user-info p { margin: 0; font-weight: 500; }
-        .user-info span { word-break: break-all; font-family: monospace; }
+        .user-info { position: absolute; bottom: 1rem; right: 1rem; left: 1rem; background-color: rgba(0, 0, 0, 0.2); padding: 0.75rem; border-radius: 10px; text-align: center; display: flex; align-items: center; gap: 10px; }
+        .user-info img { width: 40px; height: 40px; border-radius: 50%; }
+        .user-info div { text-align: right; }
+        .user-info p { margin: 0; font-weight: 700; font-size: 0.9rem; }
+        .user-info span { font-size: 0.75rem; opacity: 0.8; }
         .main-content { flex-grow: 1; padding: 2rem; margin-right: 260px; transition: margin-right 0.3s ease-in-out; }
         .page { display: none; }
         .page.active { display: block; animation: fadeIn 0.5s ease; }
@@ -63,13 +83,11 @@
         .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
         .form-group { display: flex; flex-direction: column; }
         label { font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
-        input, select { padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 10px; font-family: 'Tajawal', sans-serif; font-size: 1rem; transition: border-color 0.2s, box-shadow 0.2s; }
-        input:focus, select:focus { outline: none; border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        input, select { padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 10px; font-family: 'Tajawal', sans-serif; font-size: 1rem; }
         .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 10px; font-family: 'Tajawal', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background-color: var(--primary-accent); color: var(--white-text); }
         .btn-success { background-color: var(--success-color); color: var(--white-text); }
         .btn-danger { background-color: var(--danger-color); color: var(--white-text); }
-        .btn-secondary { background-color: var(--border-color); color: var(--text-primary); }
         .data-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; overflow-x: auto; display: block; }
         .data-table th, .data-table td { padding: 1rem 1.2rem; text-align: right; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
         .data-table thead { background-color: #f9fafb; }
@@ -84,16 +102,20 @@
         .hamburger { color: var(--text-primary); }
         .close-btn { color: var(--white-text); position: absolute; top: 1rem; left: 1rem; }
         @media (max-width: 992px) { .sidebar { transform: translateX(260px); } .sidebar.open { transform: translateX(0); } .main-content { margin-right: 0; } .hamburger { display: block; } .close-btn { display: block; } }
-        .hidden { display: none; }
     </style>
 </head>
 <body>
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <p>جاري المزامنة...</p>
+    <div id="login-screen">
+        <img src="logo.png" alt="شعار صحة">
+        <h1>مرحبًا بك في تطبيق صحة للمخزون</h1>
+        <p>قم بتسجيل الدخول باستخدام حساب جوجل للوصول إلى بياناتك ومزامنتها عبر جميع أجهزتك.</p>
+        <button id="google-signin-btn">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.19,4.73C14.03,4.73 15.1,5.5 15.7,6.05L17.87,4.12C16.16,2.67 14.33,2 12.19,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.19,22C17.6,22 21.54,18.33 21.54,12.29C21.54,11.76 21.48,11.43 21.35,11.1Z"></path></svg>
+            تسجيل الدخول باستخدام جوجل
+        </button>
     </div>
 
-    <div class="container">
+    <div id="app-container" class="container hidden">
         <aside class="sidebar" id="sidebar">
             <button class="close-btn" id="closeBtn">&times;</button>
             <div class="logo-container"><img src="logo.png" alt="شعار صحة" class="logo"></div>
@@ -109,9 +131,12 @@
                     <li><a href="#settings" class="nav-link"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>الإعدادات</a></li>
                 </ul>
             </nav>
-            <div class="user-info">
-                <p>معرف المستخدم:</p>
-                <span id="userIdDisplay">...</span>
+            <div class="user-info" id="user-info-display">
+                <img id="user-photo" src="" alt="User Photo">
+                <div>
+                    <p id="user-name"></p>
+                    <span id="user-email"></span>
+                </div>
             </div>
         </aside>
 
@@ -148,6 +173,7 @@
             </section>
             <section id="settingsPage" class="page">
                 <div class="page-header"><h2>الإعدادات</h2></div>
+                <div class="card"><h3>إدارة الحساب</h3><div style="margin-top: 1.5rem;"><button id="sign-out-btn" class="btn btn-danger">تسجيل الخروج</button></div></div>
                 <div class="card"><h3>إدارة البيانات</h3><div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;"><button id="exportDataBtn" class="btn btn-success">تصدير البيانات (JSON)</button><button id="importDataBtn" class="btn btn-secondary">استيراد البيانات (JSON)</button><input type="file" id="importFileInput" class="hidden" accept=".json"></div></div>
                 <div class="card"><h3>حذف كل البيانات</h3><div style="margin-top: 1.5rem;"><button id="deleteAllDataBtn" class="btn btn-danger">حذف جميع البيانات نهائيًا</button></div></div>
             </section>
@@ -156,7 +182,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, onSnapshot, writeBatch, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -169,20 +195,25 @@
         };
 
         const App = {
-            db: null, userId: null,
+            db: null, userId: null, auth: null,
             state: { rawMaterials: [], finishedProducts: [], wasteLog: [], transactions: [] },
             unsubscribers: [],
             listenersAttached: false,
 
-            init(db, userId) {
+            init(db, user, auth) {
                 if (this.db) return;
-                this.db = db; this.userId = userId;
+                this.db = db; this.userId = user.uid; this.auth = auth;
                 
-                document.getElementById('userIdDisplay').textContent = this.userId;
+                document.getElementById('user-name').textContent = user.displayName;
+                document.getElementById('user-email').textContent = user.email;
+                document.getElementById('user-photo').src = user.photoURL;
+
                 this.setupEventListeners();
                 this.router.init();
                 this.attachDataListeners();
-                document.getElementById('loading-overlay').style.display = 'none';
+                
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
             },
 
             attachDataListeners() {
@@ -200,6 +231,7 @@
 
             setupEventListeners() {
                 if (this.listenersAttached) return;
+                document.getElementById('sign-out-btn').addEventListener('click', () => signOut(this.auth));
                 document.querySelector('.nav-menu').addEventListener('click', e => { const link = e.target.closest('a'); if (link) { e.preventDefault(); this.router.navigateTo(link.hash); } });
                 document.getElementById('hamburgerBtn').addEventListener('click', () => document.getElementById('sidebar').classList.add('open'));
                 document.getElementById('closeBtn').addEventListener('click', () => document.getElementById('sidebar').classList.remove('open'));
@@ -284,7 +316,7 @@
 
             settings: {
                 exportData() { const dataStr = JSON.stringify(App.state); const dataBlob = new Blob([dataStr], { type: "application/json" }); const dataUrl = URL.createObjectURL(dataBlob); const linkElement = document.createElement('a'); linkElement.href = dataUrl; linkElement.download = `saha_backup_${new Date().toISOString().slice(0, 10)}.json`; document.body.appendChild(linkElement); linkElement.click(); document.body.removeChild(linkElement); URL.revokeObjectURL(dataUrl); },
-                importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const newState = JSON.parse(e.target.result); Swal.fire({ title: 'تأكيد الاستيراد', text: "سيتم استبدال جميع البيانات الحالية. هل أنت متأكد؟", icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، استورد!' }).then(async (result) => { if (result.isConfirmed) { const batch = writeBatch(App.db); ['rawMaterials', 'finishedProducts', 'wasteLog', 'transactions'].forEach(colName => { App.state[colName].forEach(item => batch.delete(doc(App.db, `users/${App.userId}/${colName}`, item.id))); newState[colName].forEach(item => { const { id, ...data } = item; batch.set(doc(App.db, `users/${App.userId}/${colName}`, id), data); }); }); await batch.commit(); Swal.fire('نجاح!', 'تم استيراد البيانات بنجاح.', 'success'); } }); } catch (error) { Swal.fire('خطأ', 'الملف غير صالح.', 'error'); } finally { event.target.value = ''; } }; reader.readAsText(file); },
+                importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const newState = JSON.parse(e.target.result); Swal.fire({ title: 'تأكيد الاستيراد', text: "سيتم استبدال جميع البيانات الحالية. هل أنت متأكد؟", icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، استورد!' }).then(async (result) => { if (result.isConfirmed) { const batch = writeBatch(App.db); ['rawMaterials', 'finishedProducts', 'wasteLog', 'transactions'].forEach(colName => { App.state[colName].forEach(item => batch.delete(doc(App.db, `users/${App.userId}/${colName}`, item.id))); newState[colName].forEach(item => { const { id, ...data } = item; batch.set(doc(App.db, `users/${App.userId}/${colName}`, id || doc(collection(App.db, `users/${App.userId}/${colName}`)).id), data); }); }); await batch.commit(); Swal.fire('نجاح!', 'تم استيراد البيانات بنجاح.', 'success'); } }); } catch (error) { Swal.fire('خطأ', 'الملف غير صالح.', 'error'); } finally { event.target.value = ''; } }; reader.readAsText(file); },
                 deleteAllData() { Swal.fire({ title: 'هل أنت متأكد تمامًا؟', html: `هذا الإجراء سيحذف <b>كل شيء</b> نهائيًا.<br>اكتب "حذف" للتأكيد.`, icon: 'error', input: 'text', showCancelButton: true, confirmButtonText: 'تأكيد الحذف', preConfirm: (value) => { if (value !== 'حذف') { Swal.showValidationMessage('الرجاء كتابة "حذف" للتأكيد.'); } } }).then(async (result) => { if (result.isConfirmed) { const batch = writeBatch(App.db); ['rawMaterials', 'finishedProducts', 'wasteLog', 'transactions'].forEach(colName => { App.state[colName].forEach(item => batch.delete(doc(App.db, `users/${App.userId}/${colName}`, item.id))); }); await batch.commit(); Swal.fire('تم الحذف!', 'تم حذف جميع البيانات.', 'success'); } }); },
                 async printReport() { const reportContent = document.getElementById('textReportOutput'); const canvas = await html2canvas(reportContent, { scale: 2 }); const imgData = canvas.toDataURL('image/png'); const { jsPDF } = window.jspdf; const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: [canvas.width, canvas.height] }); pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height); pdf.save(`report_${new Date().toISOString().slice(0, 10)}.pdf`); }
             }
@@ -303,21 +335,29 @@
                        console.error('Firebase persistence is not available in this browser.');
                   }
               });
+            
+            const googleProvider = new GoogleAuthProvider();
+            document.getElementById('google-signin-btn').addEventListener('click', () => {
+                signInWithPopup(auth, googleProvider).catch(error => {
+                    console.error("Google sign-in error", error);
+                    Swal.fire('خطأ', 'فشل تسجيل الدخول باستخدام جوجل.', 'error');
+                });
+            });
 
             onAuthStateChanged(auth, user => {
                 if (user) {
-                    App.init(db, user.uid);
+                    App.init(db, user, auth);
                 } else {
-                    signInAnonymously(auth).catch(error => {
-                        console.error("Anonymous sign-in failed:", error);
-                        document.getElementById('loading-overlay').innerHTML = '<p>فشل تسجيل الدخول.</p>';
-                    });
+                    App.unsubscribers.forEach(unsub => unsub());
+                    App.db = null;
+                    document.getElementById('login-screen').classList.remove('hidden');
+                    document.getElementById('app-container').classList.add('hidden');
                 }
             });
         } catch (e) {
             console.error("Firebase initialization failed:", e);
-            document.getElementById('loading-overlay').innerHTML = '<p>فشل الاتصال بقاعدة البيانات.</p>';
+            document.getElementById('login-screen').innerHTML = '<h1>فشل الاتصال بقاعدة البيانات. الرجاء تحديث الصفحة.</h1>';
         }
     </script>
 </body>
-</ht
+</html>
