@@ -37,25 +37,14 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Tajawal', sans-serif; background-color: var(--background-color); color: var(--text-primary); line-height: 1.6; }
         
-        /* --- Login Screen Styles --- */
-        #login-screen {
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            width: 100%; height: 100vh; background-color: var(--background-color);
-            text-align: center; padding: 2rem;
-        }
+        #login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100vh; background-color: var(--background-color); text-align: center; padding: 2rem; }
         #login-screen img { max-width: 150px; margin-bottom: 2rem; border-radius: 20px; }
         #login-screen h1 { font-size: 2.5rem; color: var(--text-primary); margin-bottom: 1rem; }
         #login-screen p { font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 2.5rem; max-width: 500px; }
-        #google-signin-btn {
-            display: inline-flex; align-items: center; gap: 12px;
-            padding: 12px 24px; font-size: 1.1rem; font-weight: 700;
-            color: #fff; background-color: #4285F4; border: none;
-            border-radius: 8px; cursor: pointer; transition: background-color 0.3s;
-        }
+        #google-signin-btn { display: inline-flex; align-items: center; gap: 12px; padding: 12px 24px; font-size: 1.1rem; font-weight: 700; color: #fff; background-color: #4285F4; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; }
         #google-signin-btn:hover { background-color: #357ae8; }
         #google-signin-btn svg { width: 24px; height: 24px; }
 
-        /* --- Main App Styles --- */
         .hidden { display: none !important; }
         .container { display: flex; min-height: 100vh; }
         .sidebar { width: 260px; background: var(--sidebar-bg); color: var(--white-text); padding: 2rem 1rem; position: fixed; top: 0; right: 0; height: 100%; transition: transform 0.3s ease-in-out; z-index: 100; }
@@ -97,7 +86,8 @@
         .bom-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-radius: 8px; }
         .bom-item:nth-child(odd) { background-color: #f3f4f6; }
         .report-controls { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
-        #textReportOutput { background-color: #f9fafb; border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 2rem; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; direction: ltr; text-align: left; }
+        #textReportOutput h3, #textReportOutput h4 { margin-bottom: 1rem; }
+        #textReportOutput .data-table { margin-top: 0; }
         .hamburger, .close-btn { display: none; cursor: pointer; background: none; border: none; font-size: 2rem; z-index: 101; }
         .hamburger { color: var(--text-primary); }
         .close-btn { color: var(--white-text); position: absolute; top: 1rem; left: 1rem; }
@@ -311,7 +301,66 @@
 
             reports: {
                 toggleDateInputs() { const type = document.getElementById('reportType').value; const dateInput = document.getElementById('reportDate'); const monthInput = document.getElementById('reportMonth'); if (type === 'daily') { dateInput.classList.remove('hidden'); dateInput.previousElementSibling.classList.remove('hidden'); monthInput.classList.add('hidden'); monthInput.previousElementSibling.classList.add('hidden'); } else { dateInput.classList.add('hidden'); dateInput.previousElementSibling.classList.add('hidden'); monthInput.classList.remove('hidden'); monthInput.previousElementSibling.classList.remove('hidden'); } },
-                generate() { const type = document.getElementById('reportType').value; const dateVal = document.getElementById('reportDate').value; const monthVal = document.getElementById('reportMonth').value; const outputDiv = document.getElementById('textReportOutput'); if ((type === 'daily' && !dateVal) || (type === 'monthly' && !monthVal)) { outputDiv.innerHTML = `<p style="text-align: center; color: var(--text-secondary);">الرجاء اختيار تاريخ صالح.</p>`; return; } let startDate, endDate; if (type === 'daily') { startDate = new Date(dateVal); startDate.setHours(0, 0, 0, 0); endDate = new Date(dateVal); endDate.setHours(23, 59, 59, 999); } else { const [year, month] = monthVal.split('-'); startDate = new Date(year, month - 1, 1); endDate = new Date(year, month, 0, 23, 59, 59, 999); } const transactionsInPeriod = App.state.transactions.filter(t => { const tDate = new Date(t.date); return tDate >= startDate && tDate <= endDate; }); let reportHTML = `<h3>تقرير ${type === 'daily' ? 'يومي' : 'شهري'} للفترة من ${startDate.toLocaleDateString('ar-EG')} إلى ${endDate.toLocaleDateString('ar-EG')}</h3>`; let productsSection = `<div class="report-section"><h4>1. قسم الإنتاج الجاهز والمبيعات</h4>`; App.state.finishedProducts.forEach(product => { const productions = transactionsInPeriod.filter(t => t.type === 'production' && t.itemId === product.id); const sales = transactionsInPeriod.filter(t => t.type === 'sale' && t.itemId === product.id); const totalProduction = productions.reduce((sum, t) => sum + t.quantity, 0); const totalSales = sales.reduce((sum, t) => sum + t.quantity, 0); const closingBalance = product.stock; const openingBalance = closingBalance - totalProduction + totalSales; productsSection += `<div class="report-item"><h5>المنتج: ${product.name}</h5><p>الرصيد الافتتاحي: <strong>${openingBalance.toFixed(2)} ${product.unit || ''}</strong></p><p>الإنتاج الجديد: <strong style="color:var(--success-color)">+ ${totalProduction.toFixed(2)} ${product.unit || ''}</strong></p><p>المجموع قبل المبيعات: <strong>${(openingBalance + totalProduction).toFixed(2)} ${product.unit || ''}</strong></p><p>المبيعات: <strong style="color:var(--danger-color)">- ${totalSales.toFixed(2)} ${product.unit || ''}</strong></p><p>الرصيد الختامي: <strong>${closingBalance.toFixed(2)} ${product.unit || ''}</strong></p></div>`; }); productsSection += `</div>`; reportHTML += productsSection; let rawMaterialsSection = `<div class="report-section"><h4>2. قسم المواد الخام</h4>`; App.state.rawMaterials.forEach(rm => { let totalUsed = 0; transactionsInPeriod.forEach(t => { if (t.type === 'production' && t.rawMaterialsUsed) { const used = t.rawMaterialsUsed.find(usedRm => usedRm.rawMaterialId === rm.id); if (used) totalUsed += used.quantity; } }); const closingBalance = rm.stock; const openingBalance = closingBalance + totalUsed; rawMaterialsSection += `<div class="report-item"><h5>المادة الخام: ${rm.name}</h5><p>الرصيد الافتتاحي: <strong>${openingBalance.toFixed(2)} ${rm.unit || ''}</strong></p><p>المستخدم في الإنتاج: <strong style="color:var(--danger-color)">- ${totalUsed.toFixed(2)} ${rm.unit || ''}</strong></p><p>الرصيد الختامي: <strong>${closingBalance.toFixed(2)} ${rm.unit || ''}</strong></p></div>`; }); rawMaterialsSection += `</div>`; reportHTML += rawMaterialsSection; outputDiv.innerHTML = reportHTML; }
+                generate() {
+                    const type = document.getElementById('reportType').value;
+                    const dateVal = document.getElementById('reportDate').value;
+                    const monthVal = document.getElementById('reportMonth').value;
+                    const outputDiv = document.getElementById('textReportOutput');
+                    if ((type === 'daily' && !dateVal) || (type === 'monthly' && !monthVal)) {
+                        outputDiv.innerHTML = `<p style="text-align: center; color: var(--text-secondary);">الرجاء اختيار تاريخ صالح.</p>`;
+                        return;
+                    }
+                    let startDate, endDate;
+                    if (type === 'daily') {
+                        startDate = new Date(dateVal);
+                        startDate.setHours(0, 0, 0, 0);
+                        endDate = new Date(dateVal);
+                        endDate.setHours(23, 59, 59, 999);
+                    } else {
+                        const [year, month] = monthVal.split('-');
+                        startDate = new Date(year, month - 1, 1);
+                        endDate = new Date(year, month, 0, 23, 59, 59, 999);
+                    }
+                    const transactionsInPeriod = App.state.transactions.filter(t => {
+                        const tDate = new Date(t.date);
+                        return tDate >= startDate && tDate <= endDate;
+                    });
+                    
+                    let reportHTML = `<h3>تقرير ${type === 'daily' ? 'يومي' : 'شهري'} للفترة من ${startDate.toLocaleDateString('ar-EG')} إلى ${endDate.toLocaleDateString('ar-EG')}</h3>`;
+                    
+                    // Products Table
+                    let productsTable = `<h4>حركة الإنتاج الجاهز والمبيعات</h4><table class="data-table"><thead><tr><th>اسم المنتج</th><th>الرصيد الافتتاحي</th><th>الإنتاج الجديد (+)</th><th>المبيعات (-)</th><th>الرصيد الختامي</th></tr></thead><tbody>`;
+                    App.state.finishedProducts.forEach(product => {
+                        const productions = transactionsInPeriod.filter(t => t.type === 'production' && t.itemId === product.id);
+                        const sales = transactionsInPeriod.filter(t => t.type === 'sale' && t.itemId === product.id);
+                        const totalProduction = productions.reduce((sum, t) => sum + t.quantity, 0);
+                        const totalSales = sales.reduce((sum, t) => sum + t.quantity, 0);
+                        const closingBalance = product.stock;
+                        const openingBalance = closingBalance - totalProduction + totalSales;
+                        productsTable += `<tr><td>${product.name}</td><td>${openingBalance.toFixed(2)}</td><td>${totalProduction.toFixed(2)}</td><td>${totalSales.toFixed(2)}</td><td>${closingBalance.toFixed(2)}</td></tr>`;
+                    });
+                    productsTable += `</tbody></table>`;
+                    reportHTML += productsTable;
+
+                    // Raw Materials Table
+                    let rawMaterialsTable = `<br><h4>حركة المواد الخام</h4><table class="data-table"><thead><tr><th>اسم المادة الخام</th><th>الرصيد الافتتاحي</th><th>المستخدم في الإنتاج (-)</th><th>الرصيد الختامي</th></tr></thead><tbody>`;
+                    App.state.rawMaterials.forEach(rm => {
+                        let totalUsed = 0;
+                        transactionsInPeriod.forEach(t => {
+                            if (t.type === 'production' && t.rawMaterialsUsed) {
+                                const used = t.rawMaterialsUsed.find(usedRm => usedRm.rawMaterialId === rm.id);
+                                if (used) totalUsed += used.quantity;
+                            }
+                        });
+                        const closingBalance = rm.stock;
+                        const openingBalance = closingBalance + totalUsed;
+                        rawMaterialsTable += `<tr><td>${rm.name}</td><td>${openingBalance.toFixed(2)}</td><td>${totalUsed.toFixed(2)}</td><td>${closingBalance.toFixed(2)}</td></tr>`;
+                    });
+                    rawMaterialsTable += `</tbody></table>`;
+                    reportHTML += rawMaterialsTable;
+
+                    outputDiv.innerHTML = reportHTML;
+                }
             },
 
             settings: {
