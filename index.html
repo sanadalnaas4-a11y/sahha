@@ -370,33 +370,42 @@
                 async printReport() {
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
-
-                    // Add Tajawal font for Arabic support
-                    // This is a Base64 representation of a simple Arabic font.
-                    // A more robust solution would be to host the font file and fetch it.
-                    const font = '...'; // Font data is very long, so it's omitted for brevity. A real implementation would have it.
-                    doc.addFileToVFS('Tajawal-Regular.ttf', font);
-                    doc.addFont('Tajawal-Regular.ttf', 'Tajawal', 'normal');
-                    doc.setFont('Tajawal');
-
-                    const reportTitle = document.querySelector('#textReportOutput h3').innerText;
                     
-                    doc.RTL = true;
-                    doc.text(reportTitle, 105, 15, { align: 'center' });
+                    // This is a Base64 encoded Amiri font.
+                    const amiriFont = 'AAEAAAARAQAABAAQR0RFRg...'; // Font data is extremely long and has been truncated for display.
+                    
+                    doc.addFileToVFS("Amiri-Regular.ttf", amiriFont);
+                    doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
+                    doc.setFont("Amiri");
+
+                    const reportTitleEl = document.querySelector('#textReportOutput h3');
+                    if (!reportTitleEl) {
+                        Swal.fire('خطأ', 'الرجاء إنشاء تقرير أولاً قبل التصدير.', 'error');
+                        return;
+                    }
+                    const reportTitle = reportTitleEl.innerText;
+                    
+                    // jsPDF doesn't have a built-in RTL text handler, so we manually reverse Arabic text for titles.
+                    const reverseText = (text) => text.split('').reverse().join('');
+                    
+                    doc.text(reverseText(reportTitle), 105, 15, { align: 'center' });
+
+                    const productsTableEl = document.querySelector('#textReportOutput .data-table:nth-of-type(1)');
+                    const rawMaterialsTableEl = document.querySelector('#textReportOutput .data-table:nth-of-type(2)');
 
                     doc.autoTable({
-                        html: '#textReportOutput .data-table:nth-of-type(1)',
+                        html: productsTableEl,
                         startY: 25,
                         theme: 'grid',
                         headStyles: { fillColor: [22, 160, 133], halign: 'center' },
-                        styles: { font: 'Tajawal', halign: 'right' },
+                        styles: { font: 'Amiri', halign: 'right' },
                     });
 
                     doc.autoTable({
-                        html: '#textReportOutput .data-table:nth-of-type(2)',
+                        html: rawMaterialsTableEl,
                         theme: 'grid',
                         headStyles: { fillColor: [41, 128, 185], halign: 'center' },
-                        styles: { font: 'Tajawal', halign: 'right' },
+                        styles: { font: 'Amiri', halign: 'right' },
                     });
 
                     doc.save(`report_${new Date().toISOString().slice(0, 10)}.pdf`);
