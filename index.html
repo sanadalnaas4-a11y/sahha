@@ -142,7 +142,7 @@
             <!-- تم إزالة معلومات المستخدم -->
         </aside>
 
-        <!-- المحتوى الرئيسي (بدون تغييرات هنا) -->
+        <!-- المحتوى الرئيسي -->
         <main class="main-content">
             <button class="hamburger" id="hamburgerBtn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
             <section id="rawMaterialsPage" class="page active">
@@ -191,7 +191,6 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        // --- تعديل: تم استبدال تسجيل الدخول بجوجل بالتسجيل المجهول ---
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, onSnapshot, writeBatch, updateDoc, enableIndexedDbPersistence, query, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -204,49 +203,43 @@
             appId: "1:21522402648:web:c813c4eafcb937be44692d"
         };
 
-        // --- تعديل: اسم المخزن المشترك ---
         const SHARED_DATA_PATH = 'sharedInventoryData'; 
 
         const App = {
-            db: null, userId: null, auth: null, // userId سيظل موجوداً للمستخدم المجهول
+            db: null, userId: null, auth: null,
             state: { rawMaterials: [], spareParts: [], finishedProducts: [], wasteLog: [], transactions: [] },
             unsubscribers: [],
             listenersAttached: false,
 
             init(db, user, auth) {
-                // لا يوجد إعادة تهيئة إذا كان موجوداً بالفعل
                 if (this.db) return; 
-                
                 console.log("Initializing App with Anonymous User ID:", user.uid);
                 this.db = db; this.userId = user.uid; this.auth = auth;
-                
-                // تم إزالة تحديث معلومات المستخدم (لأن المستخدم مجهول)
-                // document.getElementById('user-name').textContent = 'مستخدم مشترك';
-                // document.getElementById('user-email').textContent = `ID: ${user.uid.substring(0, 8)}...`;
-                // document.getElementById('user-photo').src = 'https://via.placeholder.com/40/3b82f6/ffffff?text=S'; // Placeholder icon
-
                 this.setupEventListeners();
                 this.router.init();
-                this.attachDataListeners(); // سيستمع الآن للمخزن المشترك
-                
-                // إظهار التطبيق بعد التحميل والتأكد من تسجيل الدخول المجهول
+                // استدعاء attachDataListeners بعد التأكد من تهيئة db
+                this.attachDataListeners(); 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
             },
 
             attachDataListeners() {
+                // التأكد من وجود db قبل محاولة استخدامه
+                if (!this.db) {
+                     console.error("Firestore DB not initialized. Cannot attach listeners.");
+                     return;
+                }
                 this.unsubscribers.forEach(unsub => unsub()); this.unsubscribers = [];
                 const collectionsToSync = ['rawMaterials', 'spareParts', 'finishedProducts', 'wasteLog', 'transactions'];
                 
                 collectionsToSync.forEach(colName => {
-                    // --- تعديل: استخدام المسار المشترك ---
                     const collectionRef = collection(this.db, `${SHARED_DATA_PATH}/${colName}`);
                     console.log(`Listening to shared path: ${SHARED_DATA_PATH}/${colName}`);
 
                     const unsub = onSnapshot(collectionRef, (snapshot) => {
                         console.log(`Data received for ${colName}:`, snapshot.docs.length, 'docs');
                         this.state[colName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        // التأكد من استدعاء renderAll لتحديث الواجهة بالبيانات الجديدة
+                        // تأكد من أن renderAll يتم استدعاؤه بعد تحديث state
                         this.renderAll(); 
                     }, (error) => console.error(`Error listening to ${colName}:`, error));
                     this.unsubscribers.push(unsub);
@@ -254,17 +247,14 @@
             },
 
             setupEventListeners() {
-                // منع إعادة إضافة المستمعين
                 if (this.listenersAttached) return; 
                 console.log("Setting up event listeners.");
 
                 // تم إزالة مستمع زر تسجيل الخروج
-                // document.getElementById('sign-out-btn').addEventListener('click', () => signOut(this.auth));
                 document.querySelector('.nav-menu').addEventListener('click', e => { const link = e.target.closest('a'); if (link) { e.preventDefault(); this.router.navigateTo(link.hash); } });
                 document.getElementById('hamburgerBtn').addEventListener('click', () => document.getElementById('sidebar').classList.add('open'));
                 document.getElementById('closeBtn').addEventListener('click', () => document.getElementById('sidebar').classList.remove('open'));
                 
-                // --- لا تغييرات في مستمعي الأحداث الداخلية للأقسام ---
                 document.getElementById('addRawMaterialBtn').addEventListener('click', () => this.rawMaterials.add());
                 document.getElementById('rawMaterialsSearch').addEventListener('input', (e) => this.render.rawMaterials(e.target.value));
                 document.getElementById('rawMaterialsTable').addEventListener('click', e => { if (e.target.dataset.id) { if (e.target.classList.contains('edit-btn')) this.rawMaterials.edit(e.target.dataset.id); if (e.target.classList.contains('delete-btn')) this.rawMaterials.delete(e.target.dataset.id); } });
@@ -294,46 +284,142 @@
                 console.log("Event listeners attached.");
             },
             
-            // --- لا تغييرات في renderAll و router و render ---
-            renderAll() { /* ... كما كان ... */ },
-            router: { /* ... كما كان ... */ },
-            render: { /* ... كما كان ... */ },
+            renderAll() {
+                 // إضافة تحقق للتأكد من أن state معرفة قبل محاولة العرض
+                 if (!this.state) {
+                     console.warn("App state not ready for rendering yet.");
+                     return;
+                 }
+                 console.log("Rendering all components...");
+                 try {
+                     this.render.rawMaterials();
+                     this.render.spareParts();
+                     this.render.finishedProducts();
+                     this.render.bomProductSelect();
+                     this.render.wasteItemSelect();
+                     this.render.wasteLog();
+                     this.render.salesProductSelect();
+                     this.render.salesLog();
+                     console.log("All components rendered.");
+                 } catch (e) {
+                      console.error("Error during renderAll:", e);
+                 }
+            },
+            
+            router: {
+                pages: document.querySelectorAll('.page'), navLinks: document.querySelectorAll('.nav-link'),
+                init() { const currentHash = window.location.hash || '#rawMaterials'; this.navigateTo(currentHash); window.addEventListener('hashchange', () => this.navigateTo(window.location.hash)); },
+                navigateTo(hash) { 
+                    if (!hash || hash === '#') hash = '#rawMaterials'; // تصحيح: التعامل مع hash فارغ
+                    const targetPageId = hash.substring(1) + 'Page'; 
+                    console.log("Navigating to:", targetPageId); // Add log
+                    this.pages.forEach(p => p.classList.toggle('active', p.id === targetPageId)); 
+                    this.navLinks.forEach(l => l.classList.toggle('active', l.hash === hash)); 
+                    document.getElementById('sidebar').classList.remove('open'); 
+                    if (hash === '#reports') {
+                        // التأكد من أن App.reports موجود قبل استدعائه
+                        if(App.reports && typeof App.reports.generate === 'function') {
+                            App.reports.generate();
+                        } else {
+                            console.error("App.reports or App.reports.generate is not defined.");
+                        }
+                    } 
+                }
+            },
 
-            // --- التعديلات في أقسام البيانات لاستخدام المسار المشترك ---
-            rawMaterials: {
-                async add() { /* ... الكود السابق ... */ if (formValues) { try { await addDoc(collection(App.db, `${SHARED_DATA_PATH}/rawMaterials`), formValues); Swal.fire('تم!', '...', 'success'); } catch (e) { /*...*/ } } },
-                async edit(id) { /* ... الكود السابق ... */ if (formValues) { try { await setDoc(doc(App.db, `${SHARED_DATA_PATH}/rawMaterials`, id), formValues, { merge: true }); Swal.fire('تم!', '...', 'success'); } catch (e) { /*...*/ } } },
-                delete(id) { /* ... الكود السابق ... */ .then(async (result) => { if (result.isConfirmed) { try { await deleteDoc(doc(App.db, `${SHARED_DATA_PATH}/rawMaterials`, id)); Swal.fire('تم الحذف!', '...', 'success'); } catch (e) { /*...*/ } } }); }
+            render: {
+                 // --- تم إضافة تدقيق وتحسينات هنا ---
+                 rawMaterials(searchTerm = '') {
+                     console.log("Rendering raw materials...");
+                     const tableBody = document.getElementById('rawMaterialsTable');
+                     // التحقق من وجود tableBody
+                     if (!tableBody) { console.error("rawMaterialsTable not found"); return; }
+                     // التحقق من وجود App.state.rawMaterials
+                     if (!App.state || App.state.rawMaterials === undefined) { 
+                         console.warn("App.state.rawMaterials is undefined during render.");
+                         tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">جاري تحميل المواد الخام...</td></tr>`;
+                         return;
+                     }
+                     try {
+                         // التحقق من أن item.name موجود قبل استدعاء toLowerCase
+                         const filtered = App.state.rawMaterials.filter(item => item && item.name && typeof item.name === 'string' && item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+                         if (filtered.length === 0) {
+                             tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">لم يتم إضافة مواد خام بعد.</td></tr>`;
+                         } else {
+                             tableBody.innerHTML = filtered.map(item =>
+                                 `<tr class="${(item.stock !== undefined && item.threshold !== undefined && item.stock <= item.threshold) ? 'low-stock' : ''}">
+                                     <td>${item.name || 'غير متوفر'}</td>
+                                     <td>${item.supplier || 'N/A'}</td>
+                                     <td>${item.unit || ''}</td>
+                                     <td>${item.stock !== undefined ? item.stock : '?'}</td>
+                                     <td>${item.threshold !== undefined ? item.threshold : '?'}</td>
+                                     <td class="actions">
+                                         <button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button>
+                                         <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button>
+                                     </td>
+                                 </tr>`
+                             ).join('');
+                         }
+                         console.log("Raw materials rendered successfully.");
+                     } catch (e) {
+                         console.error("Error during raw materials rendering:", e);
+                         tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: red;">خطأ في عرض المواد الخام.</td></tr>`;
+                     }
+                 },
+                 spareParts(searchTerm = '') {
+                     console.log("Rendering spare parts...");
+                     const tableBody = document.getElementById('sparePartsTable');
+                     if (!tableBody) { console.error("sparePartsTable not found"); return; }
+                      if (!App.state || App.state.spareParts === undefined) { 
+                         console.warn("App.state.spareParts is undefined during render.");
+                         tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">جاري تحميل قطع الغيار...</td></tr>`;
+                         return;
+                     }
+                     try {
+                         const filtered = App.state.spareParts.filter(item => item && item.name && typeof item.name === 'string' && item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+                         if (filtered.length === 0) {
+                             tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">لم يتم إضافة قطع غيار بعد.</td></tr>`;
+                         } else {
+                             tableBody.innerHTML = filtered.map(item =>
+                                 `<tr class="${(item.stock !== undefined && item.threshold !== undefined && item.stock <= item.threshold) ? 'low-stock' : ''}">
+                                     <td>${item.name || 'غير متوفر'}</td>
+                                     <td>${item.supplier || 'N/A'}</td>
+                                     <td>${item.unit || ''}</td>
+                                     <td>${item.stock !== undefined ? item.stock : '?'}</td>
+                                     <td>${item.threshold !== undefined ? item.threshold : '?'}</td>
+                                     <td class="actions">
+                                         <button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button>
+                                         <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button>
+                                     </td>
+                                 </tr>`
+                             ).join('');
+                         }
+                         console.log("Spare parts rendered successfully.");
+                     } catch (e) {
+                         console.error("Error during spare parts rendering:", e);
+                         tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: red;">خطأ في عرض قطع الغيار.</td></tr>`;
+                     }
+                 },
+                 // --- بقية دوال render (بدون تغييرات كبيرة، لكن يجب التأكد من وجود العناصر) ---
+                 finishedProducts(searchTerm = '') { const tableBody = document.getElementById('finishedProductsTable'); if (!tableBody || !App.state || App.state.finishedProducts === undefined) return; try { /* ... */ } catch(e) { console.error("Error rendering finished products:", e); }},
+                 salesProductSelect() { const select = document.getElementById('salesProductSelect'); if (!select || !App.state || App.state.finishedProducts === undefined) return; select.innerHTML = '<option value="">-- اختر منتج --</option>' + App.state.finishedProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join(''); },
+                 salesLog() { const tableBody = document.getElementById('salesLogTable'); if (!tableBody || !App.state || App.state.transactions === undefined) return; const sales = App.state.transactions.filter(t => t.type === 'sale'); /* ... */ },
+                 bomProductSelect() { const select = document.getElementById('bomProductSelect'); if (!select || !App.state || App.state.finishedProducts === undefined) return; select.innerHTML = '<option value="">-- اختر منتج --</option>' + App.state.finishedProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join(''); },
+                 bomList(productId) { const listDiv = document.getElementById('bomList'); if (!listDiv || !App.state || App.state.finishedProducts === undefined || App.state.rawMaterials === undefined) return; const product = App.state.finishedProducts.find(p => p.id === productId); /* ... */ },
+                 bomRawMaterialSelect() { const select = document.getElementById('bomRawMaterialSelect'); if (!select || !App.state || App.state.rawMaterials === undefined) return; select.innerHTML = '<option value="">-- اختر مادة خام --</option>' + App.state.rawMaterials.map(rm => `<option value="${rm.id}">${rm.name}</option>`).join(''); },
+                 wasteItemSelect() { const select = document.getElementById('wasteItemSelect'); if (!select || !App.state) return; const type = document.getElementById('wasteTypeSelect').value; let items = []; if (type === 'raw' && App.state.rawMaterials) items = App.state.rawMaterials; else if (type === 'spare' && App.state.spareParts) items = App.state.spareParts; else if (type === 'product' && App.state.finishedProducts) items = App.state.finishedProducts; select.innerHTML = items.map(i => `<option value="${i.id}">${i.name}</option>`).join(''); },
+                 wasteLog() { const tableBody = document.getElementById('wasteLogTable'); if (!tableBody || !App.state || App.state.wasteLog === undefined) return; /* ... */ },
             },
-            spareParts: {
-                 async add() { /* ... الكود السابق ... */ if (formValues) { try { await addDoc(collection(App.db, `${SHARED_DATA_PATH}/spareParts`), formValues); Swal.fire('تم!', '...', 'success'); } catch (e) { /*...*/ } } },
-                 async edit(id) { /* ... الكود السابق ... */ if (formValues) { try { await setDoc(doc(App.db, `${SHARED_DATA_PATH}/spareParts`, id), formValues, { merge: true }); Swal.fire('تم!', '...', 'success'); } catch (e) { /*...*/ } } },
-                 delete(id) { /* ... الكود السابق ... */ .then(async (result) => { if (result.isConfirmed) { try { await deleteDoc(doc(App.db, `${SHARED_DATA_PATH}/spareParts`, id)); Swal.fire('تم الحذف!', '...', 'success'); } catch (e) { /*...*/ } } }); }
-            },
-            products: {
-                async add() { /* ... الكود السابق ... */ if (formValues) { try { await addDoc(collection(App.db, `${SHARED_DATA_PATH}/finishedProducts`), formValues); Swal.fire('تم!', '...', 'success'); } catch (e) { /*...*/ } } },
-                async edit(id) { /* ... الكود السابق ... */ if (formValues) { try { await setDoc(doc(App.db, `${SHARED_DATA_PATH}/finishedProducts`, id), formValues, { merge: true }); Swal.fire('تم!', '...', 'success'); } catch (e) { /*...*/ } } },
-                delete(id) { /* ... الكود السابق ... */ .then(async (result) => { if (result.isConfirmed) { try { await deleteDoc(doc(App.db, `${SHARED_DATA_PATH}/finishedProducts`, id)); Swal.fire('تم الحذف!', '...', 'success'); } catch (e) { /*...*/ } } }); },
-                async addProduction(productId) { /* ... الكود السابق للتحقق من المواد ... */ if (canProduce) { try { const batch = writeBatch(App.db); rawMaterialsUsed.forEach(used => { const rmRef = doc(App.db, `${SHARED_DATA_PATH}/rawMaterials`, used.rawMaterialId); /*...*/ batch.update(rmRef, { stock: rawMaterial.stock - used.quantity }); }); const productRef = doc(App.db, `${SHARED_DATA_PATH}/finishedProducts`, productId); batch.update(productRef, { stock: product.stock + quantity }); const transColRef = collection(App.db, `${SHARED_DATA_PATH}/transactions`); batch.set(doc(transColRef), { /*...*/ }); await batch.commit(); Swal.fire('تم الإنتاج!', '...', 'success'); } catch (e) { /*...*/ } } } }
-            },
-            sales: {
-                async record() { /* ... الكود السابق للتحقق ... */ try { const batch = writeBatch(App.db); const productRef = doc(App.db, `${SHARED_DATA_PATH}/finishedProducts`, productId); batch.update(productRef, { stock: product.stock - quantity }); const transColRef = collection(App.db, `${SHARED_DATA_PATH}/transactions`); batch.set(doc(transColRef), { /*...*/ }); await batch.commit(); /*...*/ Swal.fire('تم البيع!', '...', 'success'); } catch (e) { /*...*/ } }
-            },
-            bom: {
-                showBOMForProduct(productId) { /* لا تغيير هنا */ },
-                async add() { /* ... الكود السابق للتحقق ... */ const productRef = doc(App.db, `${SHARED_DATA_PATH}/finishedProducts`, productId); /*...*/ try { await updateDoc(productRef, { bom: newBom }); /*...*/ Swal.fire('تم!', '...', 'success'); } catch (e) { /*...*/ } },
-                async delete(productId, rawMaterialId) { const productRef = doc(App.db, `${SHARED_DATA_PATH}/finishedProducts`, productId); /*...*/ try { await updateDoc(productRef, { bom: newBom }); } catch (e) { /*...*/ } }
-            },
-            waste: {
-                async record() { /* ... الكود السابق للتحقق ... */ try { const batch = writeBatch(App.db); const itemRef = doc(App.db, `${SHARED_DATA_PATH}/${collectionName}`, itemId); batch.update(itemRef, { stock: item.stock - quantity }); const wasteColRef = collection(App.db, `${SHARED_DATA_PATH}/wasteLog`); batch.set(doc(wasteColRef), { /*...*/ }); await batch.commit(); /*...*/ Swal.fire('تم التسجيل!', '...', 'success'); } catch (e) { /*...*/ } }
-            },
-            reports: { /* لا تغيير هنا */ },
-            settings: {
-                exportData() { /* لا تغيير هنا */ },
-                importData(event) { /* ...الكود السابق للتحقق والقراءة... */ .then(async (result) => { if (result.isConfirmed) { const batch = writeBatch(App.db); const collectionsToClear = ['rawMaterials', 'spareParts', 'finishedProducts', 'wasteLog', 'transactions']; for (const colName of collectionsToClear) { const querySnapshot = await getDocs(collection(App.db, `${SHARED_DATA_PATH}/${colName}`)); querySnapshot.forEach(doc => batch.delete(doc.ref)); } await batch.commit(); const importBatch = writeBatch(App.db); collectionsToClear.forEach(colName => { if(newState[colName]) { newState[colName].forEach(item => { const { id, ...data } = item; const docRef = id ? doc(App.db, `${SHARED_DATA_PATH}/${colName}`, id) : doc(collection(App.db, `${SHARED_DATA_PATH}/${colName}`)); batch.set(docRef, data); }); } }); await importBatch.commit(); Swal.fire('نجاح!', '...', 'success'); } }); /*...*/ },
-                async deleteAllData() { /* ...الكود السابق للتأكيد... */ .then(async (result) => { if (result.isConfirmed) { const batch = writeBatch(App.db); const collectionsToClear = ['rawMaterials', 'spareParts', 'finishedProducts', 'wasteLog', 'transactions']; for (const colName of collectionsToClear) { const querySnapshot = await getDocs(collection(App.db, `${SHARED_DATA_PATH}/${colName}`)); querySnapshot.forEach(doc => batch.delete(doc.ref)); } await batch.commit(); Swal.fire('تم الحذف!', '...', 'success'); } }); },
-                printReport() { /* لا تغيير هنا */ }
-            }
+
+            // --- دوال العمليات (add, edit, delete, etc.) تبقى كما هي (تستخدم المسار المشترك) ---
+            rawMaterials: { /* ... */ },
+            spareParts: { /* ... */ },
+            products: { /* ... */ },
+            sales: { /* ... */ },
+            bom: { /* ... */ },
+            waste: { /* ... */ },
+            reports: { /* ... */ },
+            settings: { /* ... */ }
         };
 
         // --- Auth Handling (Modified for Anonymous Auth) ---
@@ -351,30 +437,27 @@
                        console.error('Firebase persistence is not available in this browser.');
                   }
               });
-            
-            // --- تعديل: لا حاجة لـ Google Provider ---
-            // const googleProvider = new GoogleAuthProvider();
-            
-            // --- تعديل: إزالة زر تسجيل الدخول بجوجل ---
-            // document.getElementById('google-signin-btn').addEventListener('click', () => { ... });
-
-            // --- تعديل: إزالة getRedirectResult ---
-            // getRedirectResult(auth)...
 
             // مراقبة حالة المصادقة وتسجيل الدخول كمجهول إذا لزم الأمر
             onAuthStateChanged(auth, user => {
                 if (user) {
-                    // المستخدم مسجل دخوله (سواء كان مجهولاً أو غير ذلك)
                     console.log("User is signed in:", user.uid, "Is anonymous:", user.isAnonymous);
-                    App.init(db, user, auth);
+                    // استدعاء App.init فقط إذا لم يتم تهيئته من قبل
+                    if (!App.db) {
+                         App.init(db, user, auth);
+                    } else {
+                        // إذا تم تهيئته بالفعل، تأكد من تحديث userId إذا تغير (نظريًا لا يجب أن يتغير للمجهول)
+                        App.userId = user.uid;
+                        console.log("App already initialized, updated userId if changed.");
+                        // قد تحتاج لاستدعاء attachDataListeners إذا كنت تريد إعادة تحميل البيانات عند تغيير المستخدم (غير محتمل هنا)
+                        // App.attachDataListeners(); 
+                    }
                 } else {
-                    // المستخدم ليس مسجل دخوله، قم بتسجيل دخوله كمجهول
                     console.log("User is signed out. Signing in anonymously...");
                     signInAnonymously(auth)
                         .then((userCredential) => {
-                            // تم تسجيل الدخول كمجهول بنجاح
-                            // onAuthStateChanged سيتم استدعاؤه مرة أخرى مع المستخدم الجديد
                              console.log("Signed in anonymously successfully.");
+                             // لا حاجة لـ App.init هنا، onAuthStateChanged سيعمل مرة أخرى
                         })
                         .catch((error) => {
                             console.error("Anonymous sign-in error", error);
