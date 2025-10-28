@@ -415,9 +415,32 @@
                   else if (err.code == 'unimplemented') { console.error('Firebase persistence is not available in this browser.'); }
               });
 
-            onAuthStateChanged(auth, user => {
-                if (user) {
-                    console.log("User is signed in:", user.uid, "Is anonymous:", user.isAnonymous);
+            
+onAuthStateChanged(auth, async function(user) {
+  try {
+    if (!user) {
+      console.log("No user, signing in anonymously...");
+      await signInAnonymously(auth);
+      return; // wait for next auth state change
+    }
+    console.log("Anonymous user signed in:", user.uid);
+    try {
+      await App.init(db, user, auth);
+    } catch (e) {
+      console.error("App.init error:", e);
+    }
+    var loaderEl = document.querySelector('#loader');
+    if (loaderEl) { loaderEl.classList.add('hidden'); }
+    var mainEl = document.querySelector('#mainPage');
+    if (mainEl) { mainEl.classList.remove('hidden'); }
+  } catch (error) {
+    console.error("Auth error:", error);
+    var loaderEl2 = document.querySelector('#loader');
+    if (loaderEl2) { loaderEl2.classList.add('hidden'); }
+    alert("فشل تسجيل الدخول المجهول. تأكد من تفعيله في Firebase Console.");
+  }
+});
+
                     if (!App.db) { App.init(db, user, auth); } 
                     else { App.userId = user.uid; console.log("App already initialized, updated userId if changed."); }
                 } else {
