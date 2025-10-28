@@ -1,128 +1,802 @@
-// ========== js/app.js (مجمّع) ==========
-// يشمل: state + FirebaseAuth + Raw&BOM + Production + Spares + Reports + Bootstrap
+document.addEventListener('DOMContentLoaded', () => {
+    const app = {
+        state: {
+            rawMaterials: [],
+            finishedProducts: [],
+            wasteLog: [],
+            transactions: [], // The new source of truth for reports
+        },
 
-// ---------- state ----------
-const LS_KEY = 'saha.v3';
-const defaultState = {
-  raw: [], finished: [], bom: [], prodOrders: [],
-  spares: [], sparesLog: [],
-  reportSettings: {companyName:'شركة صحة', signer:'مسؤول المخازن', notes:''},
-  fb: {apiKey:'', authDomain:'', projectId:'', appId:''}
-};
-function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||structuredClone(defaultState); }catch{ return structuredClone(defaultState); } }
-function save(st){ localStorage.setItem(LS_KEY, JSON.stringify(st)); }
-function uid(){ return Math.random().toString(36).slice(2,9); }
-function fmt(n){ return (n??0).toLocaleString(undefined,{maximumFractionDigits:4}); }
-function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
+        init() {
+            this.loadState();
+            this.router.init();
+            this.addEventListeners();
+            this.renderAll();
+            // Set default date for report
+            document.getElementById('reportDate').valueAsDate = new Date();
+            document.getElementById('reportMonth').value = new Date().toISOString().slice(0, 7);
+        },
 
-// ---------- helpers ----------
-const $ = id=>document.getElementById(id);
+        saveState() {
+            try {
+                localStorage.setItem('sahaInventoryState', JSON.stringify(this.state));
+            } catch (e) {
+                console.error("Error saving state:", e);
+                Swal.fire('خطأ', 'لم نتمكن من حفظ بياناتك.', 'error');
+            }
+        },
 
-// ---------- Firebase Auth ----------
-let fbApp=null, fbAuth=null, user=null;
-function initFirebaseAuth(){
-  const st = load(); const {apiKey,authDomain,projectId,appId}=st.fb||{};
-  if(!apiKey||!authDomain){ updateUserBox(); return; }
-  try{ fbApp=firebase.initializeApp({apiKey,authDomain,projectId,appId}); fbAuth=firebase.auth(); fbAuth.onAuthStateChanged(u=>{user=u;updateUserBox();}); }catch(e){ console.warn('Firebase init skipped', e); }
-  if($('#googleLogin')) $('#googleLogin').onclick=async()=>{ if(!fbAuth) return alert('فعّل إعدادات Firebase أولاً.'); const provider=new firebase.auth.GoogleAuthProvider(); await fbAuth.signInWithPopup(provider); };
-  if($('#logoutBtn')) $('#logoutBtn').onclick=async()=>{ if(fbAuth) await fbAuth.signOut(); };
-}
-function updateUserBox(){ if($('#userEmail')) $('#userEmail').textContent = user?(user.email||'مستخدم'):'غير مسجل'; if($('#googleLogin')) $('#googleLogin').classList.toggle('hidden', !!user); if($('#logoutBtn')) $('#logoutBtn').classList.toggle('hidden', !user); }
+        loadState() {
+            const storedState = localStorage.getItem('sahaInventoryState');
+            if (storedState) {
+                try {
+                    this.state = JSON.parse(storedState);
+                    // Ensure all state arrays exist to prevent errors with old data structures
+                    this.state.rawMaterials = this.state.rawMaterials || [];
+                    this.state.finishedProducts = this.state.finishedProducts || [];
+                    this.state.wasteLog = this.state.wasteLog || [];
+                    this.state.transactions = this.state.transactions || [];
+                } catch (e) {
+                     console.error("Error loading state:", e);
+                     this.state = { rawMaterials: [], finishedProducts: [], wasteLog: [], transactions: [] };
+                }
+            }
+        },
 
-// ---------- RAW & BOM ----------
-let editingRawId=null, editingBomId=null;
-function renderRaw(st){
-  const tb=$('rawTableBody'); if(!tb) return; tb.innerHTML='';
-  st.raw.forEach(r=>{
-    const tr=document.createElement('tr'); const convert=(r.unit==='kg'&&r.packsPerKg)?`${r.packsPerKg} عبوة/كجم`:'—';
-    tr.innerHTML=`<td>${r.name}</td><td>${r.unit==='kg'?'كجم':'قطعة'}</td><td>${fmt(r.qty)}</td><td>${fmt(r.reorder||0)}</td><td>${convert}</td>
-    <td><button data-ed="${r.id}">تعديل</button><button data-del="${r.id}">حذف</button></td>`; tb.appendChild(tr);
-  });
-  tb.querySelectorAll('[data-ed]').forEach(b=>b.onclick()=>editRaw(st,b.dataset.ed));
-  tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delRaw(st,b.dataset.del));
-  const sel=$('bomRaw'); if(sel){ sel.innerHTML=''; st.raw.forEach(r=>{const o=document.createElement('option'); o.value=r.id;o.textContent=r.name;sel.appendChild(o)}); }
-  updateStats(st);
-}
-function editRaw(st,id){ const r=st.raw.find(x=>x.id===id); if(!r) return; editingRawId=id; if($('rawName')) $('rawName').value=r.name; if($('rawUnit')) $('rawUnit').value=r.unit; if($('rawQty')) $('rawQty').value=r.qty; if($('rawReorder')) $('rawReorder').value=r.reorder||0; if($('packsPerKg')) $('packsPerKg').value=r.packsPerKg||''; toggleKgOptions(); }
-function delRaw(st,id){ if(!confirm('حذف الخامة؟')) return; st.raw=st.raw.filter(x=>x.id!==id); save(st); renderRaw(st); }
-function toggleKgOptions(){ const unit=$('rawUnit')?.value; if($('#kgOptions')) $('#kgOptions').classList.toggle('hidden', unit!=='kg'); }
-function saveRaw(st){ const obj={ id:editingRawId||uid(), name:($('rawName')?.value||'').trim(), unit:$('rawUnit')?.value||'pcs', qty:+($('rawQty')?.value||0), reorder:+($('rawReorder')?.value||0) }; if(obj.unit==='kg') obj.packsPerKg=+($('packsPerKg')?.value||0)||0; if(!obj.name) return alert('أدخل اسم الخامة'); if(editingRawId){const i=st.raw.findIndex(x=>x.id===editingRawId); st.raw[i]=obj; editingRawId=null;} else st.raw.push(obj); save(st); resetRawForm(); renderRaw(st); }
-function resetRawForm(){ if($('rawName')) $('rawName').value=''; if($('rawQty')) $('rawQty').value=''; if($('rawReorder')) $('rawReorder').value=''; if($('packsPerKg')) $('packsPerKg').value=''; if($('rawUnit')) $('rawUnit').value='pcs'; toggleKgOptions(); editingRawId=null; }
+        addEventListeners() {
+            document.querySelector('.nav-menu').addEventListener('click', e => {
+                const link = e.target.closest('a');
+                if (link) { e.preventDefault(); this.router.navigateTo(link.hash); }
+            });
 
-function renderBOM(st){ const tb=$('bomTableBody'); if(!tb) return; tb.innerHTML=''; st.bom.forEach(b=>{ const raw=st.raw.find(r=>r.id===b.rawId); const usage=b.usageType==='grams'?'جرام':'عبوات/قطع'; const tr=document.createElement('tr'); tr.innerHTML=`<td>${b.product}</td><td>${raw?raw.name:'—'}</td><td>${usage}</td><td>${fmt(b.qtyPerUnit)}</td><td><button data-edb="${b.id}">تعديل</button><button data-delb="${b.id}">حذف</button></td>`; tb.appendChild(tr); }); tb.querySelectorAll('[data-edb]').forEach(b=>b.onclick=()=>editBom(st,b.dataset.edb)); tb.querySelectorAll('[data-delb]').forEach(b=>b.onclick=()=>delBom(st,b.dataset.delb)); }
-function editBom(st,id){ const b=st.bom.find(x=>x.id===id); if(!b) return; editingBomId=id; if($('bomProduct')) $('bomProduct').value=b.product; if($('bomRaw')) $('bomRaw').value=b.rawId; if($('bomUsageType')) $('bomUsageType').value=b.usageType; if($('bomQtyPerUnit')) $('bomQtyPerUnit').value=b.qtyPerUnit; }
-function delBom(st,id){ if(!confirm('حذف بند BOM؟')) return; st.bom=st.bom.filter(x=>x.id!==id); save(st); renderBOM(st); }
-function saveBOM(st){ const obj={ id:editingBomId||uid(), product:($('bomProduct')?.value||'').trim(), rawId:$('bomRaw')?.value||'', usageType:$('bomUsageType')?.value||'pcs', qtyPerUnit:+($('bomQtyPerUnit')?.value||0) }; if(!obj.product||!obj.rawId) return alert('أكمل الحقول'); if(editingBomId){const i=st.bom.findIndex(x=>x.id===editingBomId); st.bom[i]=obj; editingBomId=null;} else st.bom.push(obj); save(st); resetBomForm(); renderBOM(st); }
-function resetBomForm(){ if($('bomProduct')) $('bomProduct').value=''; if($('bomQtyPerUnit')) $('bomQtyPerUnit').value=''; }
+            document.getElementById('hamburgerBtn').addEventListener('click', () => document.getElementById('sidebar').classList.add('open'));
+            document.getElementById('closeBtn').addEventListener('click', () => document.getElementById('sidebar').classList.remove('open'));
 
-function computeConsumptionForOrder(st, product, qty){ const bomLines=st.bom.filter(b=>b.product===product); if(!bomLines.length) throw new Error('لا يوجد BOM لهذا المنتج'); const materials=[]; bomLines.forEach(b=>{ const raw=st.raw.find(r=>r.id===b.rawId); if(!raw) return; let needPcs=0, needKg=0; if(b.usageType==='pcs'){ const totalPcs=b.qtyPerUnit*qty; if(raw.unit==='kg'){ const ppk=+raw.packsPerKg||0; if(!ppk) throw new Error('حدد العبوات/كجم للخامة '+raw.name); needKg= totalPcs/ppk; } else needPcs= totalPcs; } else if(b.usageType==='grams'){ const totalGrams=b.qtyPerUnit*qty; if(raw.unit==='kg') needKg= totalGrams/1000; else throw new Error('لو الخامة بالقطعة لا تستخدم الجرامات'); } if(needKg){ raw.qty= +(raw.qty-needKg).toFixed(4); materials.push({rawId:raw.id, usedQty:+needKg.toFixed(4), unit:'kg'}); } if(needPcs){ raw.qty= +(raw.qty-needPcs).toFixed(4); materials.push({rawId:raw.id, usedQty:+needPcs.toFixed(4), unit:'pcs'}); } }); return materials; }
+            // Raw Materials
+            document.getElementById('addRawMaterialBtn').addEventListener('click', () => this.rawMaterials.add());
+            document.getElementById('rawMaterialsSearch').addEventListener('input', (e) => this.render.rawMaterials(e.target.value));
+            document.getElementById('rawMaterialsTable').addEventListener('click', e => {
+                if (e.target.classList.contains('edit-btn')) this.rawMaterials.edit(e.target.dataset.id);
+                if (e.target.classList.contains('delete-btn')) this.rawMaterials.delete(e.target.dataset.id);
+            });
 
-// ---------- Production ----------
-function renderProd(st){ const tb=$('prodTableBody'); if(!tb) return; tb.innerHTML=''; st.prodOrders.forEach(o=>{ const used=o.materials.map(m=>`• ${rawName(st,m.rawId)}: ${fmt(m.usedQty)} ${m.unit==='kg'?'كجم':'قطعة'}`).join('<br>'); const tr=document.createElement('tr'); tr.innerHTML=`<td>${new Date(o.ts).toLocaleString()}</td><td>${o.product}</td><td>${o.qty}</td><td>${used}</td>`; tb.appendChild(tr); }); }
-function rawName(st,id){ return (st.raw.find(r=>r.id===id)||{}).name||'—'; }
-function runProduction(st){ const product=($('prodProduct')?.value||'').trim(); const qty=+($('prodQty')?.value||0); if(!product||qty<=0) return alert('أدخل المنتج والكمية'); try{ const materials=computeConsumptionForOrder(st,product,qty); const fin=st.finished.find(f=>f.product===product); if(fin) fin.qty+=qty; else st.finished.push({product,qty}); st.prodOrders.unshift({ts:Date.now(),product,qty,materials}); save(st); renderRaw(st); renderProd(st); alert('تم تشغيل الأمر وخصم الخامات'); }catch(e){ alert(e.message); } }
+            // Finished Products
+            document.getElementById('addProductBtn').addEventListener('click', () => this.products.add());
+            document.getElementById('finishedProductsSearch').addEventListener('input', (e) => this.render.finishedProducts(e.target.value));
+            document.getElementById('finishedProductsTable').addEventListener('click', e => {
+                if (e.target.classList.contains('edit-btn')) this.products.edit(e.target.dataset.id);
+                if (e.target.classList.contains('delete-btn')) this.products.delete(e.target.dataset.id);
+                if (e.target.classList.contains('add-production-btn')) this.products.addProduction(e.target.dataset.id);
+            });
 
-// ---------- Spares ----------
-let editingSpId=null;
-function renderSpares(st){ const tb=$('sparesTableBody'); if(tb){ tb.innerHTML=''; st.spares.forEach(s=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${s.name}</td><td>${s.machine||'—'}</td><td>${fmt(s.qty)}</td><td>${fmt(s.reorder||0)}</td><td><button data-eds="${s.id}">تعديل</button><button data-dels="${s.id}">حذف</button></td>`; tb.appendChild(tr); }); tb.querySelectorAll('[data-eds]').forEach(b=>b.onclick=()=>editSpare(st,b.dataset.eds)); tb.querySelectorAll('[data-dels]').forEach(b=>b.onclick=()=>delSpare(st,b.dataset.dels)); }
-  const sel=$('spUseName'); if(sel){ sel.innerHTML=''; st.spares.forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=s.name; sel.appendChild(o); }); }
-  const lb=$('sparesLogBody'); if(lb){ lb.innerHTML=''; st.sparesLog.forEach(l=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${new Date(l.ts).toLocaleString()}</td><td>${l.name}</td><td>${l.qty}</td><td>${l.machine||'—'}</td><td>${l.notes||''}</td>`; lb.appendChild(tr); }); }
-  updateStats(st);
-}
-function editSpare(st,id){ const s=st.spares.find(x=>x.id===id); if(!s) return; editingSpId=id; $('spName').value=s.name; $('spMachine').value=s.machine||''; $('spQty').value=s.qty; $('spReorder').value=s.reorder||0; }
-function delSpare(st,id){ if(!confirm('حذف القطعة؟')) return; st.spares=st.spares.filter(x=>x.id!==id); save(st); renderSpares(st); }
-function saveSpare(st){ const obj={ id:editingSpId||uid(), name:($('spName')?.value||'').trim(), machine:($('spMachine')?.value||'').trim(), qty:+($('spQty')?.value||0), reorder:+($('spReorder')?.value||0) }; if(!obj.name) return alert('أدخل اسم القطعة'); if(editingSpId){ const i=st.spares.findIndex(x=>x.id===editingSpId); st.spares[i]=obj; editingSpId=null; } else st.spares.push(obj); save(st); resetSpForm(); renderSpares(st); }
-function resetSpForm(){ if($('spName')) $('spName').value=''; if($('spMachine')) $('spMachine').value=''; if($('spQty')) $('spQty').value=''; if($('spReorder')) $('spReorder').value=''; editingSpId=null; }
-function applySpareUse(st){ const id=$('spUseName')?.value||''; const qty=+($('spUseQty')?.value||0); if(!id||qty<=0) return alert('اختر الصنف والكمية'); const s=st.spares.find(x=>x.id===id); if(!s) return; s.qty=+(s.qty-qty).toFixed(2); st.sparesLog.unshift({ts:Date.now(), name:s.name, qty, machine:($('spUseMachine')?.value||''), notes:($('spUseNotes')?.value||'')}); save(st); if($('spUseQty')) $('spUseQty').value=''; if($('spUseMachine')) $('spUseMachine').value=''; if($('spUseNotes')) $('spUseNotes').value=''; renderSpares(st); }
+            // Sales
+            document.getElementById('recordSaleBtn').addEventListener('click', () => this.sales.record());
 
-// ---------- Reports ----------
-function dayRange(d){ const s=+new Date(d.getFullYear(),d.getMonth(),d.getDate()); const e=+new Date(d.getFullYear(),d.getMonth(),d.getDate()+1); return {start:s,end:e,label:d.toLocaleDateString()}; }
-function monthRange(d){ const s=+new Date(d.getFullYear(),d.getMonth(),1); const e=+new Date(d.getFullYear(),d.getMonth()+1,1); return {start:s,end:e,label:d.toLocaleDateString(undefined,{year:'numeric',month:'long'})}; }
-function renderReport(st){ if($('#companyName')) $('#companyName').value=st.reportSettings.companyName||''; if($('#reportSigner')) $('#reportSigner').value=st.reportSettings.signer||''; if($('#reportNotes')) $('#reportNotes').value=st.reportSettings.notes||''; const t=$('reportType')?.value||'daily'; const range=t==='daily'? dayRange(new Date($('reportDate')?.value||todayStr())) : monthRange(new Date((($('reportMonth')?.value||todayStr()).slice(0,7)+'-01'))); const lines=[]; lines.push(`${st.reportSettings.companyName}\nتقرير ${t==='daily'?'يومي':'شهري'} — الفترة: ${range.label}`); lines.push(''); const prods=st.prodOrders.filter(o=>o.ts>=range.start && o.ts<range.end); const prodTotal=prods.reduce((a,b)=>a+b.qty,0); lines.push('أولاً: أوامر الإنتاج المنفذة'); if(prods.length){ prods.forEach((o,i)=>{ const d=new Date(o.ts).toLocaleString(); lines.push(`${i+1}) ${d} — المنتج: ${o.product} — الكمية: ${o.qty}`); o.materials.forEach(m=>{ const r=st.raw.find(x=>x.id===m.rawId); lines.push(`   • خصم خامة: ${r?r.name:m.rawId} — ${fmt(m.usedQty)} ${m.unit==='kg'?'كجم':'قطعة'}`); }); }); } else lines.push('— لا توجد أوامر إنتاج في الفترة.'); lines.push(`إجمالي وحدات الإنتاج: ${prodTotal}`); lines.push(''); const low=st.raw.filter(r=>r.qty<= (r.reorder||0)); lines.push('ثانيًا: تنبيهات الخامات (وصلت حد إعادة الطلب)'); if(low.length){ low.forEach((r,i)=>lines.push(`${i+1}) ${r.name} — متاح: ${fmt(r.qty)} ${r.unit==='kg'?'كجم':'قطعة'} — حد إعادة الطلب: ${fmt(r.reorder||0)}`)); } else lines.push('— لا توجد تنبيهات.'); lines.push(''); const spLog=st.sparesLog.filter(x=>x.ts>=range.start && x.ts<range.end); lines.push('ثالثًا: استخدام قطع الغيار'); if(spLog.length){ spLog.forEach((l,i)=> lines.push(`${i+1}) ${new Date(l.ts).toLocaleString()} — ${l.name} — كمية: ${l.qty} — ${l.machine||'—'}${l.notes?(' — ملاحظات: '+l.notes):''}`)); } else lines.push('— لا يوجد استخدام مسجل.'); lines.push(''); lines.push('رابعًا: ملخص المخزون الحالي'); lines.push('• الخامات:'); st.raw.forEach(r=> lines.push(`  - ${r.name}: ${fmt(r.qty)} ${r.unit==='kg'?'كجم':'قطعة'}`)); lines.push('• الإنتاج الجاهز:'); st.finished.forEach(f=> lines.push(`  - ${f.product}: ${fmt(f.qty)} وحدة`)); lines.push('• قطع الغيار:'); st.spares.forEach(s=> lines.push(`  - ${s.name}: ${fmt(s.qty)} قطعة (آلة: ${s.machine||'—'})`)); if(st.reportSettings.notes){ lines.push(''); lines.push('ملاحظات: '+st.reportSettings.notes); } lines.push(`الموقّع: ${st.reportSettings.signer}`); if($('reportText')) $('reportText').textContent=lines.join('\n'); }
-function toggleReportMode(){ const monthly=( $('reportType')?.value||'daily')==='monthly'; if($('reportMonth')) $('reportMonth').classList.toggle('hidden', !monthly); if($('reportDate')) $('reportDate').classList.toggle('hidden', monthly); }
+            // BOM
+            document.getElementById('bomProductSelect').addEventListener('change', e => this.bom.showBOMForProduct(e.target.value));
+            document.getElementById('addBomItemBtn').addEventListener('click', () => this.bom.add());
+            document.getElementById('bomList').addEventListener('click', e => {
+                if(e.target.classList.contains('delete-bom-item')) {
+                    const { productid, rmid } = e.target.dataset;
+                    this.bom.delete(productid, rmid);
+                }
+            });
 
-// ---------- Dashboard Stats ----------
-function updateStats(st){ if($('#statsRaw')) $('#statsRaw').innerHTML=`${st.raw.length} صنف • منخفض: <b>${st.raw.filter(r=>r.qty<=(r.reorder||0)).length}</b>`; const finTotal=st.finished.reduce((a,b)=>a+(b.qty||0),0); if($('#statsFinished')) $('#statsFinished').innerHTML=`${st.finished.length} منتج • إجمالي وحدات: <b>${finTotal}</b>`; if($('#statsSpares')) $('#statsSpares').innerHTML=`${st.spares.length} صنف • منخفض: <b>${st.spares.filter(s=>s.qty<=(s.reorder||0)).length}</b>`; }
+            // Waste
+            document.getElementById('wasteTypeSelect').addEventListener('change', () => this.waste.updateItemSelect());
+            document.getElementById('recordWasteBtn').addEventListener('click', () => this.waste.record());
+            
+            // Reports
+            document.getElementById('reportType').addEventListener('change', this.reports.toggleDateInputs);
+            document.getElementById('generateReportBtn').addEventListener('click', () => this.reports.generate());
 
-// ---------- Wiring / Bootstrap ----------
-function boot(){
-  const st = load();
-  // Firebase fields save
-  if($('#saveFbCfg')) $('#saveFbCfg').onclick=()=>{ st.fb.apiKey=$('fb_apiKey')?.value||''; st.fb.authDomain=$('fb_authDomain')?.value||''; st.fb.projectId=$('fb_projectId')?.value||''; st.fb.appId=$('fb_appId')?.value||''; save(st); alert('تم الحفظ. أعد تحميل الصفحة لتطبيق الإعدادات.'); };
-  ['fb_apiKey','fb_authDomain','fb_projectId','fb_appId'].forEach(id=>{ const el=$(id); if(el) el.value=st.fb?.[id.replace('fb_','')]||''; });
+            // Settings
+            document.getElementById('exportDataBtn').addEventListener('click', () => this.settings.exportData());
+            document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFileInput').click());
+            document.getElementById('importFileInput').addEventListener('change', e => this.settings.importData(e));
+            document.getElementById('deleteAllDataBtn').addEventListener('click', () => this.settings.deleteAllData());
+            document.getElementById('printReportBtn').addEventListener('click', this.settings.printReport);
+        },
 
-  // Raw events
-  if($('rawUnit')) $('rawUnit').onchange=()=>toggleKgOptions();
-  if($('saveRaw')) $('saveRaw').onclick=()=>saveRaw(st);
-  if($('resetRaw')) $('resetRaw').onclick=()=>resetRawForm();
+        renderAll() {
+            this.render.rawMaterials();
+            this.render.finishedProducts();
+            this.render.bomProductSelect();
+            this.render.wasteItemSelect();
+            this.render.wasteLog();
+            this.render.salesProductSelect();
+            this.render.salesLog();
+        },
+        
+        router: {
+            pages: document.querySelectorAll('.page'),
+            navLinks: document.querySelectorAll('.nav-link'),
+            init() {
+                const currentHash = window.location.hash || '#rawMaterials';
+                this.navigateTo(currentHash);
+                window.addEventListener('hashchange', () => this.navigateTo(window.location.hash));
+            },
+            navigateTo(hash) {
+                if(!hash) hash = '#rawMaterials';
+                const targetPageId = hash.substring(1) + 'Page';
+                
+                this.pages.forEach(page => page.classList.toggle('active', page.id === targetPageId));
+                this.navLinks.forEach(link => link.classList.toggle('active', link.hash === hash));
+                
+                document.getElementById('sidebar').classList.remove('open');
+                
+                if (hash === '#reports') this.reports.generate();
+            }
+        },
 
-  // BOM events
-  if($('saveBom')) $('saveBom').onclick=()=>saveBOM(st);
-  if($('resetBom')) $('resetBom').onclick=()=>resetBomForm();
+        render: {
+            rawMaterials(searchTerm = '') {
+                const tableBody = document.getElementById('rawMaterialsTable');
+                const filtered = app.state.rawMaterials.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+                tableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="5" style="text-align:center;">لم يتم إضافة مواد خام بعد.</td></tr>` :
+                filtered.map(item => `
+                    <tr class="${item.stock <= item.threshold ? 'low-stock' : ''}">
+                        <td>${item.name}</td><td>${item.unit}</td><td>${item.stock}</td><td>${item.threshold}</td>
+                        <td class="actions">
+                            <button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button>
+                            <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button>
+                        </td>
+                    </tr>`).join('');
+            },
 
-  // Production
-  if($('runProd')) $('runProd').onclick=()=>runProduction(st);
+            finishedProducts(searchTerm = '') {
+                const tableBody = document.getElementById('finishedProductsTable');
+                const filtered = app.state.finishedProducts.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+                tableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="4" style="text-align:center;">لم يتم إضافة منتجات جاهزة بعد.</td></tr>` :
+                filtered.map(item => `
+                    <tr>
+                        <td>${item.name}</td><td>${item.unit}</td><td>${item.stock}</td>
+                        <td class="actions">
+                            <button class="btn btn-success btn-sm add-production-btn" data-id="${item.id}">إضافة إنتاج</button>
+                            <button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button>
+                            <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button>
+                        </td>
+                    </tr>`).join('');
+            },
+            
+            salesProductSelect() {
+                const select = document.getElementById('salesProductSelect');
+                select.innerHTML = '<option value="">-- اختر منتج --</option>' + app.state.finishedProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            },
+            
+            salesLog() {
+                const tableBody = document.getElementById('salesLogTable');
+                const salesTransactions = app.state.transactions.filter(t => t.type === 'sale');
+                if (salesTransactions.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;">لا يوجد سجلات مبيعات.</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = [...salesTransactions].reverse().map(log => {
+                    const item = app.state.finishedProducts.find(i => i.id === log.itemId);
+                    return `
+                        <tr>
+                            <td>${new Date(log.date).toLocaleString('ar-EG')}</td>
+                            <td>${item ? item.name : 'منتج محذوف'}</td>
+                            <td>${log.quantity}</td>
+                        </tr>`;
+                }).join('');
+            },
 
-  // Spares
-  if($('saveSpare')) $('saveSpare').onclick=()=>saveSpare(st);
-  if($('resetSpare')) $('resetSpare').onclick=()=>resetSpForm();
-  if($('applySpareUse')) $('applySpareUse').onclick=()=>applySpareUse(st);
+            bomProductSelect() {
+                const select = document.getElementById('bomProductSelect');
+                select.innerHTML = '<option value="">-- اختر منتج --</option>' + app.state.finishedProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            },
 
-  // Reports
-  if($('reportType')) $('reportType').onchange=()=>{toggleReportMode(); renderReport(st);} 
-  if($('refreshReport')) $('refreshReport').onclick=()=>renderReport(st);
-  if($('printReport')) $('printReport').onclick=()=>window.print();
-  if($('shareReport')) $('shareReport').onclick=async()=>{ const text=$('reportText')?.innerText||''; if(navigator.share){ try{ await navigator.share({text}); }catch(e){} } else { await navigator.clipboard.writeText(text); alert('تم نسخ التقرير للنقل.'); } };
-  if($('companyName')) $('companyName').onchange=()=>{ st.reportSettings.companyName=$('companyName').value||'شركة صحة'; save(st); };
-  if($('reportSigner')) $('reportSigner').onchange=()=>{ st.reportSettings.signer=$('reportSigner').value||'مسؤول المخازن'; save(st); };
-  if($('reportNotes')) $('reportNotes').oninput=()=>{ st.reportSettings.notes=$('reportNotes').value||''; save(st); };
+            bomList(productId) {
+                const product = app.state.finishedProducts.find(p => p.id === productId);
+                const listDiv = document.getElementById('bomList');
+                if (!product || !product.bom || product.bom.length === 0) {
+                    listDiv.innerHTML = '<p>لا توجد مكونات لهذا المنتج.</p>';
+                    return;
+                }
+                listDiv.innerHTML = product.bom.map(item => {
+                    const rawMaterial = app.state.rawMaterials.find(rm => rm.id === item.rawMaterialId);
+                    return `
+                        <div class="bom-item">
+                            <span><strong>${rawMaterial ? rawMaterial.name : 'مادة محذوفة'}</strong>: ${item.quantity} ${rawMaterial ? rawMaterial.unit : ''}</span>
+                            <button class="btn btn-danger btn-sm delete-bom-item" data-productid="${productId}" data-rmid="${item.rawMaterialId}">&times;</button>
+                        </div>
+                    `;
+                }).join('');
+            },
 
-  // Initial Renders
-  initFirebaseAuth();
-  renderRaw(st); renderBOM(st); renderProd(st); renderSpares(st); toggleReportMode(); renderReport(st); updateStats(st);
+            bomRawMaterialSelect() {
+                const select = document.getElementById('bomRawMaterialSelect');
+                select.innerHTML = '<option value="">-- اختر مادة خام --</option>' + app.state.rawMaterials.map(rm => `<option value="${rm.id}">${rm.name}</option>`).join('');
+            },
 
-  // Re-render on section change
-  window.addEventListener('saha:render', ()=>{ renderRaw(st); renderBOM(st); renderProd(st); renderSpares(st); renderReport(st); updateStats(st); });
-}
+            wasteItemSelect(type = 'raw') {
+                const select = document.getElementById('wasteItemSelect');
+                const items = (type === 'raw') ? app.state.rawMaterials : app.state.finishedProducts;
+                select.innerHTML = items.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+            },
 
-boot();
+            wasteLog() {
+                const tableBody = document.getElementById('wasteLogTable');
+                if(app.state.wasteLog.length === 0) {
+                     tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">لا يوجد سجلات هدر.</td></tr>`;
+                     return;
+                }
+                tableBody.innerHTML = [...app.state.wasteLog].reverse().map(log => {
+                    const item = (log.type === 'raw') 
+                        ? app.state.rawMaterials.find(i => i.id === log.itemId) 
+                        : app.state.finishedProducts.find(i => i.id === log.itemId);
+                    return `
+                        <tr>
+                            <td>${new Date(log.date).toLocaleString('ar-EG')}</td>
+                            <td>${log.type === 'raw' ? 'مادة خام' : 'منتج جاهز'}</td>
+                            <td>${item ? item.name : 'صنف محذوف'}</td>
+                            <td>${log.quantity}</td>
+                        </tr>
+                    `
+                }).join('');
+            },
+        },
+
+        rawMaterials: {
+            async add() {
+                const { value: formValues } = await Swal.fire({
+                    title: 'إضافة مادة خام جديدة',
+                    html: `
+                        <input id="swal-name" class="swal2-input" placeholder="اسم المادة" required>
+                        <input id="swal-unit" class="swal2-input" placeholder="وحدة القياس (مثال: قطعة, لتر)">
+                        <input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الأولية" value="0" min="0">
+                        <input id="swal-threshold" type="number" class="swal2-input" placeholder="حد التنبيه (الكمية الأدنى)" value="0" min="0">
+                    `,
+                    focusConfirm: false,
+                    confirmButtonText: 'إضافة',
+                    cancelButtonText: 'إلغاء',
+                    showCancelButton: true,
+                    preConfirm: () => {
+                        const name = document.getElementById('swal-name').value;
+                        if (!name) {
+                            Swal.showValidationMessage(`اسم المادة مطلوب`);
+                            return false;
+                        }
+                        return {
+                            name: name,
+                            unit: document.getElementById('swal-unit').value,
+                            stock: parseFloat(document.getElementById('swal-stock').value) || 0,
+                            threshold: parseFloat(document.getElementById('swal-threshold').value) || 0,
+                        }
+                    }
+                });
+
+                if (formValues) {
+                    app.state.rawMaterials.push({ id: `rm_${Date.now()}`, ...formValues });
+                    app.saveState();
+                    app.render.rawMaterials();
+                    app.render.bomRawMaterialSelect();
+                    Swal.fire('تم!', 'تمت إضافة المادة الخام بنجاح.', 'success');
+                }
+            },
+            async edit(id) {
+                const item = app.state.rawMaterials.find(i => i.id === id);
+                if (!item) return;
+                
+                const { value: formValues } = await Swal.fire({
+                    title: 'تعديل مادة خام',
+                    html: `
+                        <input id="swal-name" class="swal2-input" placeholder="اسم المادة" value="${item.name}" required>
+                        <input id="swal-unit" class="swal2-input" placeholder="وحدة القياس" value="${item.unit}">
+                        <input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الحالية" value="${item.stock}" min="0">
+                        <input id="swal-threshold" type="number" class="swal2-input" placeholder="حد التنبيه" value="${item.threshold}" min="0">
+                    `,
+                    focusConfirm: false,
+                    confirmButtonText: 'حفظ التعديلات',
+                    cancelButtonText: 'إلغاء',
+                    showCancelButton: true,
+                    preConfirm: () => {
+                        const name = document.getElementById('swal-name').value;
+                        if (!name) {
+                            Swal.showValidationMessage(`اسم المادة مطلوب`);
+                            return false;
+                        }
+                        return {
+                            name: name,
+                            unit: document.getElementById('swal-unit').value,
+                            stock: parseFloat(document.getElementById('swal-stock').value) || 0,
+                            threshold: parseFloat(document.getElementById('swal-threshold').value) || 0,
+                        }
+                    }
+                });
+
+                if (formValues) {
+                    Object.assign(item, formValues);
+                    app.saveState();
+                    app.render.rawMaterials();
+                    Swal.fire('تم!', 'تم تحديث المادة الخام بنجاح.', 'success');
+                }
+            },
+            delete(id) {
+                Swal.fire({
+                    title: 'هل أنت متأكد؟',
+                    text: "سيتم حذف هذه المادة الخام نهائيًا!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'نعم، احذفه!',
+                    cancelButtonText: 'إلغاء'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        app.state.rawMaterials = app.state.rawMaterials.filter(i => i.id !== id);
+                        app.state.finishedProducts.forEach(p => {
+                           if(p.bom) p.bom = p.bom.filter(b => b.rawMaterialId !== id);
+                        });
+                        app.saveState();
+                        app.render.rawMaterials();
+                        app.render.bomRawMaterialSelect();
+                        Swal.fire('تم الحذف!', 'تم حذف المادة الخام.', 'success');
+                    }
+                });
+            }
+        },
+
+        products: {
+            async add() {
+                const { value: formValues } = await Swal.fire({
+                    title: 'إضافة منتج جاهز جديد',
+                    html: `
+                        <input id="swal-name" class="swal2-input" placeholder="اسم المنتج" required>
+                        <input id="swal-unit" class="swal2-input" placeholder="وحدة القياس (مثال: كرتونة, عبوة)">
+                        <input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الأولية" value="0" min="0">
+                    `,
+                    focusConfirm: false,
+                    confirmButtonText: 'إضافة',
+                    cancelButtonText: 'إلغاء',
+                    showCancelButton: true,
+                    preConfirm: () => {
+                        const name = document.getElementById('swal-name').value;
+                        if (!name) {
+                            Swal.showValidationMessage(`اسم المنتج مطلوب`);
+                            return false;
+                        }
+                        return {
+                            name: name,
+                            unit: document.getElementById('swal-unit').value,
+                            stock: parseFloat(document.getElementById('swal-stock').value) || 0,
+                        }
+                    }
+                });
+
+                if (formValues) {
+                    app.state.finishedProducts.push({ id: `fp_${Date.now()}`, bom: [], ...formValues });
+                    app.saveState();
+                    app.render.finishedProducts();
+                    app.render.bomProductSelect();
+                    app.render.salesProductSelect();
+                    Swal.fire('تم!', 'تمت إضافة المنتج بنجاح.', 'success');
+                }
+            },
+            async edit(id) {
+                 const item = app.state.finishedProducts.find(i => i.id === id);
+                if (!item) return;
+                
+                const { value: formValues } = await Swal.fire({
+                    title: 'تعديل منتج جاهز',
+                    html: `
+                        <input id="swal-name" class="swal2-input" placeholder="اسم المنتج" value="${item.name}" required>
+                        <input id="swal-unit" class="swal2-input" placeholder="وحدة القياس" value="${item.unit}">
+                        <input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الحالية" value="${item.stock}" min="0">
+                    `,
+                    focusConfirm: false,
+                    confirmButtonText: 'حفظ التعديلات',
+                    cancelButtonText: 'إلغاء',
+                    showCancelButton: true,
+                    preConfirm: () => {
+                        const name = document.getElementById('swal-name').value;
+                        if (!name) {
+                            Swal.showValidationMessage(`اسم المنتج مطلوب`);
+                            return false;
+                        }
+                        return {
+                            name: name,
+                            unit: document.getElementById('swal-unit').value,
+                            stock: parseFloat(document.getElementById('swal-stock').value) || 0,
+                        }
+                    }
+                });
+
+                if (formValues) {
+                    Object.assign(item, { ...item, ...formValues });
+                    app.saveState();
+                    app.render.finishedProducts();
+                    Swal.fire('تم!', 'تم تحديث المنتج بنجاح.', 'success');
+                }
+            },
+            delete(id) {
+                Swal.fire({
+                    title: 'هل أنت متأكد؟',
+                    text: "سيتم حذف هذا المنتج نهائيًا!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'نعم، احذفه!',
+                    cancelButtonText: 'إلغاء'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        app.state.finishedProducts = app.state.finishedProducts.filter(i => i.id !== id);
+                        app.saveState();
+                        app.render.finishedProducts();
+                        app.render.bomProductSelect();
+                        app.render.salesProductSelect();
+                        Swal.fire('تم الحذف!', 'تم حذف المنتج.', 'success');
+                    }
+                })
+            },
+            async addProduction(productId) {
+                const product = app.state.finishedProducts.find(p => p.id === productId);
+                if (!product) return;
+                if (!product.bom || product.bom.length === 0) {
+                    Swal.fire('خطأ', 'لا يمكن الإنتاج. لم يتم تعريف مكونات (BOM) لهذا المنتج.', 'error');
+                    return;
+                }
+
+                const { value: qty } = await Swal.fire({
+                    title: `إنتاج ${product.name}`,
+                    input: 'number',
+                    inputLabel: `أدخل الكمية المراد إنتاجها`,
+                    inputPlaceholder: 'مثال: 50',
+                    showCancelButton: true,
+                    confirmButtonText: 'بدء الإنتاج',
+                    cancelButtonText: 'إلغاء',
+                    inputValidator: (value) => {
+                        if (!value || value <= 0) { return 'الرجاء إدخال كمية صحيحة!' }
+                    }
+                });
+
+                if (qty) {
+                    const quantity = parseFloat(qty);
+                    let canProduce = true;
+                    const rawMaterialsUsed = [];
+
+                    for (const item of product.bom) {
+                        const rawMaterial = app.state.rawMaterials.find(rm => rm.id === item.rawMaterialId);
+                        const required = item.quantity * quantity;
+                        if (!rawMaterial || rawMaterial.stock < required) {
+                            canProduce = false;
+                            Swal.fire('نقص في المخزون!', `لا توجد كمية كافية من "${rawMaterial.name}". المطلوب: ${required}, المتاح: ${rawMaterial.stock}.`, 'warning');
+                            break;
+                        }
+                        rawMaterialsUsed.push({ rawMaterialId: item.rawMaterialId, quantity: required });
+                    }
+                    
+                    if (canProduce) {
+                        rawMaterialsUsed.forEach(used => {
+                            const rawMaterial = app.state.rawMaterials.find(rm => rm.id === used.rawMaterialId);
+                            rawMaterial.stock -= used.quantity;
+                        });
+                        product.stock += quantity;
+
+                        app.state.transactions.push({
+                            id: `t_${Date.now()}`, date: new Date().toISOString(), type: 'production',
+                            itemId: productId, quantity: quantity, rawMaterialsUsed: rawMaterialsUsed
+                        });
+
+                        app.saveState();
+                        app.render.rawMaterials();
+                        app.render.finishedProducts();
+                        Swal.fire('تم الإنتاج!', `تمت إضافة ${quantity} من ${product.name}.`, 'success');
+                    }
+                }
+            }
+        },
+        sales: {
+            record() {
+                const productId = document.getElementById('salesProductSelect').value;
+                const quantity = parseFloat(document.getElementById('salesQty').value);
+                
+                if (!productId || !quantity || quantity <= 0) {
+                    Swal.fire('خطأ', 'الرجاء اختيار منتج وإدخال كمية صحيحة.', 'error');
+                    return;
+                }
+
+                const product = app.state.finishedProducts.find(p => p.id === productId);
+                if (!product || product.stock < quantity) {
+                    Swal.fire('خطأ في المخزون', `الكمية المطلوبة (${quantity}) أكبر من المتاح (${product ? product.stock : 0}).`, 'error');
+                    return;
+                }
+
+                product.stock -= quantity;
+                
+                app.state.transactions.push({
+                    id: `t_${Date.now()}`, date: new Date().toISOString(), type: 'sale',
+                    itemId: productId, quantity: quantity
+                });
+
+                app.saveState();
+                app.render.finishedProducts();
+                app.render.salesLog();
+                document.getElementById('salesQty').value = '';
+                document.getElementById('salesProductSelect').value = '';
+                Swal.fire('تم البيع!', `تم خصم ${quantity} من ${product.name}.`, 'success');
+            }
+        },
+        bom: {
+            showBOMForProduct(productId) {
+                const bomDetailsDiv = document.getElementById('bomDetails');
+                if (!productId) {
+                    bomDetailsDiv.classList.add('hidden');
+                    return;
+                }
+                const product = app.state.finishedProducts.find(p => p.id === productId);
+                document.getElementById('bomProductName').textContent = product.name;
+                app.render.bomList(productId);
+                app.render.bomRawMaterialSelect();
+                bomDetailsDiv.classList.remove('hidden');
+            },
+            add() {
+                const productId = document.getElementById('bomProductSelect').value;
+                const rawMaterialId = document.getElementById('bomRawMaterialSelect').value;
+                const quantity = parseFloat(document.getElementById('bomRawMaterialQty').value);
+                
+                if (!productId || !rawMaterialId || !quantity || quantity <= 0) {
+                    Swal.fire('خطأ', 'الرجاء اختيار منتج ومادة خام وإدخال كمية صحيحة.', 'error');
+                    return;
+                }
+
+                const product = app.state.finishedProducts.find(p => p.id === productId);
+                if (!product.bom) product.bom = [];
+
+                const existingItem = product.bom.find(item => item.rawMaterialId === rawMaterialId);
+                if(existingItem) {
+                    existingItem.quantity = quantity;
+                } else {
+                    product.bom.push({ rawMaterialId, quantity });
+                }
+                
+                app.saveState();
+                app.render.bomList(productId);
+                document.getElementById('bomRawMaterialQty').value = '';
+                Swal.fire('تم!', 'تمت إضافة/تحديث المادة للمكونات بنجاح.', 'success');
+            },
+            delete(productId, rawMaterialId) {
+                const product = app.state.finishedProducts.find(p => p.id === productId);
+                if (product && product.bom) {
+                    product.bom = product.bom.filter(item => item.rawMaterialId !== rawMaterialId);
+                    app.saveState();
+                    app.render.bomList(productId);
+                }
+            }
+        },
+        waste: {
+            updateItemSelect() {
+                const type = document.getElementById('wasteTypeSelect').value;
+                app.render.wasteItemSelect(type);
+            },
+            record() {
+                const type = document.getElementById('wasteTypeSelect').value;
+                const itemId = document.getElementById('wasteItemSelect').value;
+                const quantity = parseFloat(document.getElementById('wasteQty').value);
+
+                if(!itemId || !quantity || quantity <= 0) {
+                    Swal.fire('خطأ', 'الرجاء اختيار صنف وإدخال كمية صحيحة.', 'error');
+                    return;
+                }
+
+                const items = (type === 'raw') ? app.state.rawMaterials : app.state.finishedProducts;
+                const item = items.find(i => i.id === itemId);
+
+                if (!item || item.stock < quantity) {
+                     Swal.fire('خطأ', `الكمية المفقودة أكبر من الكمية المتاحة في المخزون (${item.stock}).`, 'error');
+                    return;
+                }
+
+                item.stock -= quantity;
+                app.state.wasteLog.push({
+                    id: `w_${Date.now()}`,
+                    date: new Date().toISOString(),
+                    type,
+                    itemId,
+                    quantity
+                });
+
+                app.saveState();
+                if(type === 'raw') app.render.rawMaterials(); else app.render.finishedProducts();
+                app.render.wasteLog();
+                document.getElementById('wasteQty').value = '';
+                 Swal.fire('تم التسجيل!', 'تم تسجيل الهدر وخصمه من المخزون.', 'success');
+            }
+        },
+        reports: {
+            toggleDateInputs() {
+                const type = document.getElementById('reportType').value;
+                const dateInput = document.getElementById('reportDate');
+                const monthInput = document.getElementById('reportMonth');
+                if (type === 'daily') {
+                    dateInput.classList.remove('hidden');
+                    dateInput.previousElementSibling.classList.remove('hidden');
+                    monthInput.classList.add('hidden');
+                    monthInput.previousElementSibling.classList.add('hidden');
+                } else {
+                    dateInput.classList.add('hidden');
+                    dateInput.previousElementSibling.classList.add('hidden');
+                    monthInput.classList.remove('hidden');
+                    monthInput.previousElementSibling.classList.remove('hidden');
+                }
+            },
+            generate() {
+                const type = document.getElementById('reportType').value;
+                const dateVal = document.getElementById('reportDate').value;
+                const monthVal = document.getElementById('reportMonth').value;
+                const outputDiv = document.getElementById('textReportOutput');
+
+                if ((type === 'daily' && !dateVal) || (type === 'monthly' && !monthVal)) {
+                    outputDiv.innerHTML = `<p style="text-align: center; color: var(--text-secondary);">الرجاء اختيار تاريخ صالح لعرض التقرير.</p>`;
+                    return;
+                }
+
+                let startDate, endDate;
+                if (type === 'daily') {
+                    startDate = new Date(dateVal);
+                    startDate.setHours(0, 0, 0, 0);
+                    endDate = new Date(dateVal);
+                    endDate.setHours(23, 59, 59, 999);
+                } else {
+                    const [year, month] = monthVal.split('-');
+                    startDate = new Date(year, month - 1, 1);
+                    endDate = new Date(year, month, 0, 23, 59, 59, 999);
+                }
+                
+                const transactionsInPeriod = app.state.transactions.filter(t => {
+                    const tDate = new Date(t.date);
+                    return tDate >= startDate && tDate <= endDate;
+                });
+                
+                let reportHTML = `<h3>تقرير ${type === 'daily' ? 'يومي' : 'شهري'} للفترة من ${startDate.toLocaleDateString('ar-EG')} إلى ${endDate.toLocaleDateString('ar-EG')}</h3>`;
+
+                // Finished Products and Sales Report
+                let productsSection = `<div class="report-section"><h3>1. قسم الإنتاج الجاهز والمبيعات</h3>`;
+                app.state.finishedProducts.forEach(product => {
+                    const productions = transactionsInPeriod.filter(t => t.type === 'production' && t.itemId === product.id);
+                    const sales = transactionsInPeriod.filter(t => t.type === 'sale' && t.itemId === product.id);
+                    const totalProduction = productions.reduce((sum, t) => sum + t.quantity, 0);
+                    const totalSales = sales.reduce((sum, t) => sum + t.quantity, 0);
+                    
+                    const closingBalance = product.stock;
+                    const openingBalance = closingBalance - totalProduction + totalSales;
+
+                    productsSection += `
+                        <div class="report-item">
+                            <h4>المنتج: ${product.name}</h4>
+                            <p>الرصيد الافتتاحي: <strong>${openingBalance.toFixed(2)} ${product.unit || ''}</strong></p>
+                            <p>الإنتاج الجديد: <strong style="color:var(--success-color)">+ ${totalProduction.toFixed(2)} ${product.unit || ''}</strong></p>
+                            <p>المجموع قبل المبيعات: <strong>${(openingBalance + totalProduction).toFixed(2)} ${product.unit || ''}</strong></p>
+                            <p>المبيعات: <strong style="color:var(--danger-color)">- ${totalSales.toFixed(2)} ${product.unit || ''}</strong></p>
+                            <p>الرصيد الختامي: <strong>${closingBalance.toFixed(2)} ${product.unit || ''}</strong></p>
+                        </div>`;
+                });
+                productsSection += `</div>`;
+                reportHTML += productsSection;
+
+                // Raw Materials Report
+                let rawMaterialsSection = `<div class="report-section"><h3>2. قسم المواد الخام</h3>`;
+                app.state.rawMaterials.forEach(rm => {
+                    let totalUsed = 0;
+                    transactionsInPeriod.forEach(t => {
+                        if (t.type === 'production' && t.rawMaterialsUsed) {
+                            const used = t.rawMaterialsUsed.find(usedRm => usedRm.rawMaterialId === rm.id);
+                            if (used) totalUsed += used.quantity;
+                        }
+                    });
+
+                    const closingBalance = rm.stock;
+                    const openingBalance = closingBalance + totalUsed;
+                    
+                    rawMaterialsSection += `
+                        <div class="report-item">
+                            <h4>المادة الخام: ${rm.name}</h4>
+                            <p>الرصيد الافتتاحي: <strong>${openingBalance.toFixed(2)} ${rm.unit || ''}</strong></p>
+                            <p>المستخدم في الإنتاج: <strong style="color:var(--danger-color)">- ${totalUsed.toFixed(2)} ${rm.unit || ''}</strong></p>
+                            <p>الرصيد الختامي: <strong>${closingBalance.toFixed(2)} ${rm.unit || ''}</strong></p>
+                        </div>`;
+                });
+                rawMaterialsSection += `</div>`;
+                reportHTML += rawMaterialsSection;
+
+                outputDiv.innerHTML = reportHTML;
+            }
+        },
+        settings: {
+            exportData() {
+                const dataStr = JSON.stringify(app.state, null, 2);
+                const dataBlob = new Blob([dataStr], {type: "application/json"});
+                const dataUrl = URL.createObjectURL(dataBlob);
+                const exportFileDefaultName = `saha_inventory_backup_${new Date().toISOString().slice(0,10)}.json`;
+                const linkElement = document.createElement('a');
+                linkElement.href = dataUrl;
+                linkElement.download = exportFileDefaultName;
+                document.body.appendChild(linkElement);
+                linkElement.click();
+                document.body.removeChild(linkElement);
+                URL.revokeObjectURL(dataUrl);
+                Swal.fire('تم!', 'جاري تحميل ملف النسخة الاحتياطية.', 'success');
+            },
+            importData(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const newState = JSON.parse(e.target.result);
+                        if ('rawMaterials' in newState && 'finishedProducts' in newState) {
+                            Swal.fire({
+                                title: 'تأكيد الاستيراد',
+                                text: "سيتم استبدال جميع البيانات الحالية بالبيانات الموجودة في الملف. هل أنت متأكد؟",
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'نعم، استورد البيانات!',
+                                cancelButtonText: 'إلغاء'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    app.state = newState;
+                                    app.saveState();
+                                    app.renderAll();
+                                    Swal.fire('نجاح!', 'تم استيراد البيانات بنجاح.', 'success');
+                                }
+                            });
+                        } else { throw new Error('Invalid file format'); }
+                    } catch (error) {
+                         Swal.fire('خطأ', 'الملف غير صالح أو تالف.', 'error');
+                    } finally {
+                        event.target.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            },
+            deleteAllData() {
+                 Swal.fire({
+                    title: 'هل أنت متأكد تمامًا؟',
+                    html: `هذا الإجراء سيحذف <b>كل شيء</b> نهائيًا.<br>اكتب "حذف" للتأكيد.`,
+                    icon: 'error',
+                    input: 'text',
+                    inputAttributes: { autocapitalize: 'off' },
+                    showCancelButton: true,
+                    confirmButtonText: 'تأكيد الحذف',
+                    cancelButtonText: 'إلغاء',
+                    preConfirm: (value) => {
+                        if (value !== 'حذف') {
+                            Swal.showValidationMessage('الرجاء كتابة "حذف" بشكل صحيح للتأكيد.');
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        app.state = { rawMaterials: [], finishedProducts: [], wasteLog: [], transactions: [] };
+                        app.saveState();
+                        app.renderAll();
+                        Swal.fire('تم الحذف!', 'تم حذف جميع البيانات بنجاح.', 'success');
+                    }
+                });
+            },
+            async printReport() {
+                const { jsPDF } = window.jspdf;
+                const reportContent = document.getElementById('textReportOutput');
+                const originalBackgroundColor = reportContent.style.backgroundColor;
+                reportContent.style.backgroundColor = 'white';
+
+                const canvas = await html2canvas(reportContent, { scale: 2, useCORS: true });
+                reportContent.style.backgroundColor = originalBackgroundColor;
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'pt',
+                    format: [canvas.width, canvas.height]
+                });
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save(`report_${new Date().toISOString().slice(0,10)}.pdf`);
+            }
+        },
+    };
+    
+    window.app = app;
+    app.init();
+});
