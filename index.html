@@ -1,441 +1,215 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>صحة لإدارة المخزون والمبيعات (مشترك)</title>
-    
-    <link rel="manifest" href="manifest.webmanifest">
-    <meta name="theme-color" content="#1e40af">
-    <meta name="description" content="تطبيق لإدارة مخزون ومبيعات مصنع مياه صحة">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>منظومة مخازن صحة — نسخة Firebase + إصلاح التقارير + قطع الغيار + BOM مرن</title>
+  <style>
+    :root{--brand:#0a6cff;--ink:#0f172a;--muted:#6b7280;--bg:#f6f7fb;--card:#ffffff;--line:#e5e7eb}
+    *{box-sizing:border-box}body{margin:0;font-family:"Tajawal",system-ui,-apple-system,Segoe UI,Roboto;background:var(--bg);color:var(--ink)}
+    header{position:sticky;top:0;z-index:10;background:#fffcc;border-bottom:1px solid var(--line);backdrop-filter:saturate(1.5) blur(6px)}
+    .bar{display:flex;align-items:center;gap:10px;max-width:1200px;margin:0 auto;padding:10px 16px}
+    .logo{font-weight:800;color:var(--brand)}
+    nav{display:flex;flex-wrap:wrap;gap:6px;margin-inline-start:auto}
+    nav button{border:1px solid var(--line);background:var(--card);padding:8px 12px;border-radius:12px;cursor:pointer}
+    nav button.active{background:var(--brand);color:#fff;border-color:transparent}
+    main{max-width:1200px;margin:18px auto;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 4px 18px rgba(2,6,23,.04)}
+    h2{margin:6px 0 12px 0}label{font-size:14px;color:var(--muted)}
+    input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:12px}
+    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+    table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #f0f2f6;text-align:start}
+    .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);padding:9px 12px;border-radius:10px;cursor:pointer}
+    .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+    .stack{display:flex;gap:8px;flex-wrap:wrap}.muted{color:var(--muted)}.hidden{display:none}
+    @media (max-width:900px){.col-4,.col-6,.col-8{grid-column:span 12}}
+    pre{white-space:pre-wrap;line-height:1.8}
+  </style>
 
-    <link rel="icon" href="logo-512.png">
-    <link rel="apple-touch-icon" href="logo-512.png">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- jsPDF Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <!-- html2canvas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-    <style>
-        :root {
-            --sidebar-bg: linear-gradient(180deg, #1e40af 0%, #1d4ed8 100%);
-            --primary-accent: #3b82f6;
-            --primary-accent-hover: #2563eb;
-            --background-color: #f0f4f8;
-            --card-bg: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --white-text: #ffffff;
-            --border-color: #e2e8f0;
-            --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --border-radius: 16px;
-            --danger-color: #ef4444;
-            --success-color: #22c55e;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Tajawal', sans-serif; background-color: var(--background-color); color: var(--text-primary); line-height: 1.6; }
-        
-        /* شاشة التحميل (بدلاً من تسجيل الدخول) */
-        #loading-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100vh; background-color: var(--background-color); text-align: center; padding: 2rem; }
-        #loading-screen img { max-width: 150px; margin-bottom: 2rem; border-radius: 20px; }
-        #loading-screen p { font-size: 1.2rem; color: var(--text-secondary); margin-top: 1rem; }
-        .spinner {
-             width: 50px;
-             height: 50px;
-             border: 5px solid var(--border-color);
-             border-top: 5px solid var(--primary-accent);
-             border-radius: 50%;
-             animation: spin 1s linear infinite;
-             margin: 2rem auto;
-         }
-         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-
-        .hidden { display: none !important; }
-        .container { display: flex; min-height: 100vh; }
-        .sidebar { width: 260px; background: var(--sidebar-bg); color: var(--white-text); padding: 2rem 1rem; position: fixed; top: 0; right: 0; height: 100%; transition: transform 0.3s ease-in-out; z-index: 100; }
-        .sidebar .logo-container { text-align: center; margin-bottom: 1.5rem; }
-        .sidebar .logo { max-width: 80px; height: auto; border-radius: 50%; border: 3px solid var(--primary-accent); background-color: #fff; }
-        .sidebar h1 { text-align: center; margin-top: 0.5rem; font-size: 1.8rem; margin-bottom: 2rem; }
-        .nav-menu ul { list-style-type: none; padding: 0; }
-        .nav-menu li { margin-bottom: 0.5rem; }
-        .nav-menu a { display: flex; align-items: center; padding: 0.9rem; color: var(--white-text); text-decoration: none; border-radius: 12px; transition: all 0.2s ease-in-out; font-size: 1.1rem; font-weight: 500; gap: 12px; }
-        .nav-menu a:hover { background-color: rgba(255, 255, 255, 0.1); }
-        .nav-menu a.active { background-color: var(--primary-accent); font-weight: 700; }
-        .nav-menu a .icon { width: 24px; height: 24px; stroke-width: 2; }
-        /* تم إخفاء معلومات المستخدم */
-        /* .user-info { ... } */
-        .main-content { flex-grow: 1; padding: 2rem; margin-right: 260px; transition: margin-right 0.3s ease-in-out; }
-        .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
-        .page-header h2 { font-size: 2.5rem; color: var(--text-primary); }
-        .card { background-color: var(--card-bg); border-radius: var(--border-radius); padding: 1.5rem; box-shadow: var(--card-shadow); margin-bottom: 1.5rem; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
-        .form-group { display: flex; flex-direction: column; }
-        label { font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
-        input, select { padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 10px; font-family: 'Tajawal', sans-serif; font-size: 1rem; }
-        .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 10px; font-family: 'Tajawal', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-sm { padding: 0.5rem 0.8rem; font-size: 0.85rem; border-radius: 8px; }
-        .btn-primary { background-color: var(--primary-accent); color: var(--white-text); }
-        .btn-primary:hover { background-color: var(--primary-accent-hover); }
-        .btn-success { background-color: var(--success-color); color: var(--white-text); }
-        .btn-danger { background-color: var(--danger-color); color: var(--white-text); }
-        .btn-secondary { background-color: var(--border-color); color: var(--text-primary); }
-        .btn-secondary:hover { background-color: #d1d5db; }
-
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; overflow-x: auto; display: block; }
-        .data-table th, .data-table td { padding: 1rem 1.2rem; text-align: right; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-        .data-table thead { background-color: #f9fafb; }
-        .data-table th { font-weight: 800; color: var(--text-secondary); text-transform: uppercase; font-size: 0.9rem; }
-        .data-table td .actions { display: flex; gap: 0.5rem; }
-        .low-stock { background-color: #fef2f2 !important; color: var(--danger-color); font-weight: 700; }
-        .bom-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-radius: 8px; }
-        .bom-item:nth-child(odd) { background-color: #f3f4f6; }
-        
-        /* Report Styles */
-        .report-controls { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
-        #reportContent { padding: 2rem; }
-        #textReportOutput h3, #textReportOutput h4 { margin-bottom: 1rem; font-family: 'Tajawal', sans-serif; }
-        #textReportOutput .data-table { margin-top: 0; }
-        #textReportOutput .data-table th, #textReportOutput .data-table td { padding: 0.75rem; }
-        
-        .hamburger, .close-btn { display: none; cursor: pointer; background: none; border: none; font-size: 2rem; z-index: 101; }
-        .hamburger { color: var(--text-primary); }
-        .close-btn { color: var(--white-text); position: absolute; top: 1rem; left: 1rem; }
-        @media (max-width: 992px) { .sidebar { transform: translateX(260px); } .sidebar.open { transform: translateX(0); } .main-content { margin-right: 0; } .hamburger { display: block; } .close-btn { display: block; } }
-    </style>
+  <!-- Firebase SDKs (فعّل مفاتيحك من الإعدادات داخل التطبيق) -->
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
-    <!-- شاشة التحميل -->
-    <div id="loading-screen">
-        <img src="logo.png" alt="شعار صحة">
-        <div class="spinner"></div>
-        <p>جاري تحميل البيانات...</p>
+  <header>
+    <div class="bar">
+      <div class="logo">صـحـة • Saha Inventory</div>
+      <nav id="nav">
+        <button data-section="dashboard" class="active">الرئيسية</button>
+        <button data-section="raw">الخامات</button>
+        <button data-section="bom">BOM</button>
+        <button data-section="production">إنتاج</button>
+        <button data-section="reports">التقارير</button>
+        <button data-section="spares">قطع الغيار</button>
+        <button data-section="settings">الإعدادات</button>
+      </nav>
+      <div id="userBox" class="stack">
+        <span id="userEmail" class="muted">غير مسجل</span>
+        <button id="googleLogin" class="btn">تسجيل دخول Google</button>
+        <button id="logoutBtn" class="btn hidden">خروج</button>
+      </div>
     </div>
+  </header>
 
-    <!-- حاوية التطبيق الرئيسية -->
-    <div id="app-container" class="container hidden">
-        <!-- الشريط الجانبي -->
-        <aside class="sidebar" id="sidebar">
-            <button class="close-btn" id="closeBtn">&times;</button>
-            <div class="logo-container"><img src="logo.png" alt="شعار صحة" class="logo"></div>
-            <h1>صحة للمخزون</h1>
-            <nav class="nav-menu">
-                 <ul>
-                    <li><a href="#rawMaterials" class="nav-link active"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>المواد الخام</a></li>
-                    <li><a href="#spareParts" class="nav-link"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l-5.5 5.5v5l2.4 1.4c.5.3 1.1.2 1.6-.2l4-4c.4-.4.4-1 0-1.4l-4-4c-.5-.4-1.1-.5-1.6-.2L7 7.5v-5zM12 22l5.5-5.5v-5l-2.4-1.4c-.5-.3-1.1-.2-1.6.2l-4 4c-.4.4-.4 1 0 1.4l4 4c.5.4 1.1.5 1.6.2L17 16.5v5zM2 12l5.5 5.5h5l1.4-2.4c.3-.5.2-1.1-.2-1.6l-4-4c-.4-.4-1-.4-1.4 0l-4 4c-.4.5-.5 1.1-.2 1.6L7.5 17h-5zM22 12l-5.5-5.5h-5l-1.4 2.4c-.3.5-.2 1.1.2 1.6l4 4c.4.4 1 .4 1.4 0l4-4c.4-.5.5-1.1.2-1.6L16.5 7h5z"/></svg>قطع الغيار</a></li>
-                    <li><a href="#finishedProducts" class="nav-link"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22h20"></path><path d="M14 18v-3a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v3"></path><path d="M2 18h2"></path><path d="M18 18h2"></path><path d="M5 18v-9l5-3 5 3v9"></path></svg>الإنتاج الجاهز</a></li>
-                    <li><a href="#sales" class="nav-link"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="20.5" r="1"/><circle cx="18" cy="20.5" r="1"/><path d="M2.5 2.5h3l2.7 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6l1.6-8.4H7.1"/></svg>المبيعات</a></li>
-                    <li><a href="#bom" class="nav-link"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>مكونات الإنتاج</a></li>
-                    <li><a href="#waste" class="nav-link"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>الهدر والفقد</a></li>
-                    <li><a href="#reports" class="nav-link"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>التقارير</a></li>
-                    <li><a href="#settings" class="nav-link"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>الإعدادات</a></li>
-                </ul>
-            </nav>
-            <!-- تم إزالة معلومات المستخدم -->
-        </aside>
+  <main>
+    <!-- الرئيسية -->
+    <section id="dashboard" class="card">
+      <h2>لوحة التحكم</h2>
+      <p class="muted">نسخة معدّلة: إصلاح التقارير + قطع الغيار + BOM مرن + Google Sign-in.</p>
+      <div class="row">
+        <div class="col-4 card"><h3>الخامات</h3><div id="statsRaw"></div></div>
+        <div class="col-4 card"><h3>الإنتاج</h3><div id="statsFinished"></div></div>
+        <div class="col-4 card"><h3>قطع الغيار</h3><div id="statsSpares"></div></div>
+      </div>
+    </section>
 
-        <!-- المحتوى الرئيسي -->
-        <main class="main-content">
-            <button class="hamburger" id="hamburgerBtn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
-            <section id="rawMaterialsPage" class="page active">
-                <div class="page-header"><h2>المواد الخام</h2><button id="addRawMaterialBtn" class="btn btn-primary">إضافة مادة خام</button></div>
-                <div class="card"><input type="text" id="rawMaterialsSearch" placeholder="ابحث عن مادة خام..."></div>
-                <div class="card"><table class="data-table"><thead><tr><th>اسم المادة</th><th>المورد</th><th>الوحدة</th><th>الكمية الحالية</th><th>حد التنبيه</th><th>إجراءات</th></tr></thead><tbody id="rawMaterialsTable"></tbody></table></div>
-            </section>
-            <section id="sparePartsPage" class="page">
-                <div class="page-header"><h2>قطع الغيار</h2><button id="addSparePartBtn" class="btn btn-primary">إضافة قطعة غيار</button></div>
-                <div class="card"><input type="text" id="sparePartsSearch" placeholder="ابحث عن قطعة غيار..."></div>
-                <div class="card"><table class="data-table"><thead><tr><th>اسم القطعة</th><th>المورد</th><th>الوحدة</th><th>الكمية الحالية</th><th>حد التنبيه</th><th>إجراءات</th></tr></thead><tbody id="sparePartsTable"></tbody></table></div>
-            </section>
-            <section id="finishedProductsPage" class="page">
-                <div class="page-header"><h2>الإنتاج الجاهز</h2><button id="addProductBtn" class="btn btn-primary">إضافة منتج جديد</button></div>
-                <div class="card"><input type="text" id="finishedProductsSearch" placeholder="ابحث عن منتج..."></div>
-                <div class="card"><table class="data-table"><thead><tr><th>اسم المنتج</th><th>الوحدة</th><th>الكمية الحالية</th><th>إجراءات</th></tr></thead><tbody id="finishedProductsTable"></tbody></table></div>
-            </section>
-            <section id="salesPage" class="page">
-                <div class="page-header"><h2>تسجيل مبيعات</h2></div>
-                <div class="card"><div class="form-grid"><div class="form-group"><label for="salesProductSelect">اختر المنتج المباع</label><select id="salesProductSelect"></select></div><div class="form-group"><label for="salesQty">الكمية المباعة</label><input type="number" id="salesQty" min="1" placeholder="أدخل الكمية"></div></div><div style="margin-top: 2rem; text-align: left;"><button id="recordSaleBtn" class="btn btn-success">تسجيل البيع</button></div></div>
-                <div class="card"><h3>سجل المبيعات</h3><table class="data-table"><thead><tr><th>التاريخ</th><th>اسم المنتج</th><th>الكمية</th></tr></thead><tbody id="salesLogTable"></tbody></table></div>
-            </section>
-            <section id="bomPage" class="page">
-                <div class="page-header"><h2>مكونات الإنتاج (BOM)</h2></div>
-                <div class="card"><div class="form-group"><label for="bomProductSelect">اختر منتجًا:</label><select id="bomProductSelect"></select></div><div id="bomDetails" class="hidden"><h3>مكونات: <span id="bomProductName"></span></h3><div id="bomList"></div><hr style="margin: 1.5rem 0;"><h4>إضافة مادة جديدة</h4><div class="form-grid" style="align-items: flex-end;"><div class="form-group"><label for="bomRawMaterialSelect">المادة الخام</label><select id="bomRawMaterialSelect"></select></div><div class="form-group"><label for="bomRawMaterialQty">الكمية</label><input type="number" id="bomRawMaterialQty" placeholder="1.5" step="0.01"></div><div class="form-group"><button id="addBomItemBtn" class="btn btn-success">إضافة</button></div></div></div></div>
-            </section>
-            <section id="wastePage" class="page">
-                <div class="page-header"><h2>تسجيل الهدر والفقد</h2></div>
-                <div class="card"><div class="form-grid"><div class="form-group"><label for="wasteTypeSelect">نوع الصنف</label><select id="wasteTypeSelect"><option value="raw">مادة خام</option><option value="spare">قطعة غيار</option><option value="product">منتج جاهز</option></select></div><div class="form-group"><label for="wasteItemSelect">اختر الصنف</label><select id="wasteItemSelect"></select></div><div class="form-group"><label for="wasteQty">الكمية المفقودة</label><input type="number" id="wasteQty" min="1"></div></div><div style="margin-top: 2rem; text-align: left;"><button id="recordWasteBtn" class="btn btn-danger">تسجيل الفقد</button></div></div>
-                <div class="card"><h3>سجل الهدر</h3><table class="data-table"><thead><tr><th>التاريخ</th><th>نوع الصنف</th><th>اسم الصنف</th><th>الكمية</th></tr></thead><tbody id="wasteLogTable"></tbody></table></div>
-            </section>
-            <section id="reportsPage" class="page">
-                <div class="page-header"><h2>التقارير</h2><button id="printReportBtn" class="btn btn-primary">تصدير PDF</button></div>
-                <div class="card"><div class="report-controls"><div class="form-group"><label for="reportType">نوع التقرير</label><select id="reportType"><option value="daily">يومي</option><option value="monthly">شهري</option></select></div><div class="form-group"><label for="reportDate">اختر التاريخ</label><input type="date" id="reportDate"></div><div class="form-group"><label for="reportMonth" class="hidden">اختر الشهر</label><input type="month" id="reportMonth" class="hidden"></div><div class="form-group"><button id="generateReportBtn" class="btn btn-primary">عرض التقرير</button></div></div></div>
-                <div id="reportContent" class="card"><div id="textReportOutput"><p style="text-align: center; color: var(--text-secondary);">اختر نوع التقرير والتاريخ لعرض البيانات.</p></div></div>
-            </section>
-            <section id="settingsPage" class="page">
-                <div class="page-header"><h2>الإعدادات</h2></div>
-                <!-- تم إزالة قسم إدارة الحساب وتسجيل الخروج -->
-                <div class="card"><h3>إدارة البيانات</h3><div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;"><button id="exportDataBtn" class="btn btn-success">تصدير البيانات (JSON)</button><button id="importDataBtn" class="btn btn-secondary">استيراد البيانات (JSON)</button><input type="file" id="importFileInput" class="hidden" accept=".json"></div></div>
-                <div class="card"><h3>حذف كل البيانات</h3><div style="margin-top: 1.5rem;"><button id="deleteAllDataBtn" class="btn btn-danger">حذف جميع البيانات نهائيًا</button></div></div>
-            </section>
-        </main>
-    </div>
+    <!-- الخامات -->
+    <section id="raw" class="card hidden">
+      <div class="row">
+        <div class="col-8">
+          <h2>الخامات</h2>
+          <table><thead>
+            <tr><th>الصنف</th><th>الوحدة</th><th>المخزون</th><th>حد إعادة الطلب</th><th>تحويلات</th><th></th></tr>
+          </thead><tbody id="rawTableBody"></tbody></table>
+        </div>
+        <div class="col-4">
+          <h2>إضافة / تعديل خامة</h2>
+          <div class="stack card">
+            <label>الاسم<input id="rawName"></label>
+            <label>الوحدة<select id="rawUnit"><option value="pcs">قطعة</option><option value="kg">كجم</option></select></label>
+            <label>المخزون الابتدائي<input id="rawQty" type="number" step="0.0001"></label>
+            <label>حد إعادة الطلب<input id="rawReorder" type="number" step="0.0001"></label>
+            <div id="kgOptions" class="hidden">
+              <label>عدد <b>العبوات لكل 1 كجم</b><input id="packsPerKg" type="number" step="0.0001" placeholder="مثال: 120 عبوة/كجم"></label>
+            </div>
+            <div class="stack"><button class="btn primary" id="saveRaw">حفظ</button><button class="btn" id="resetRaw">جديد</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, onSnapshot, writeBatch, updateDoc, enableIndexedDbPersistence, query, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <!-- BOM -->
+    <section id="bom" class="card hidden">
+      <div class="row">
+        <div class="col-8">
+          <h2>قوائم المواد (BOM)</h2>
+          <table><thead>
+            <tr><th>المنتج</th><th>الخامة</th><th>نوع الاستهلاك</th><th>الكمية/الوحدة</th><th></th></tr>
+          </thead><tbody id="bomTableBody"></tbody></table>
+        </div>
+        <div class="col-4">
+          <h2>إضافة/تعديل BOM</h2>
+          <div class="stack card">
+            <label>اسم المنتج<input id="bomProduct"></label>
+            <label>الخامة<select id="bomRaw"></select></label>
+            <label>نوع الاستهلاك<select id="bomUsageType"><option value="pcs">عبوات/قطع</option><option value="grams">جرام</option></select></label>
+            <label>الكمية لكل وحدة منتج<input id="bomQtyPerUnit" type="number" step="0.0001"></label>
+            <div class="stack"><button class="btn primary" id="saveBom">حفظ</button><button class="btn" id="resetBom">جديد</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBgejBNyO76QgcsBPThZkH7bv1szPbcRKk",
-            authDomain: "sahha-webapp.firebaseapp.com",
-            projectId: "sahha-webapp",
-            storageBucket: "sahha-webapp.appspot.com",
-            messagingSenderId: "21522402648",
-            appId: "1:21522402648:web:c813c4eafcb937be44692d"
-        };
+    <!-- الإنتاج -->
+    <section id="production" class="card hidden">
+      <div class="row">
+        <div class="col-8">
+          <h2>أوامر الإنتاج</h2>
+          <table><thead>
+            <tr><th>التاريخ</th><th>المنتج</th><th>الكمية</th><th>خصم الخامات</th></tr>
+          </thead><tbody id="prodTableBody"></tbody></table>
+        </div>
+        <div class="col-4">
+          <h2>تشغيل أمر إنتاج</h2>
+          <div class="stack card">
+            <label>المنتج<input id="prodProduct" placeholder="مثال: مياه 0.5 لتر"></label>
+            <label>الكمية (وحدات جاهزة)<input id="prodQty" type="number" step="1"></label>
+            <div class="stack"><button class="btn primary" id="runProd">تشغيل</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        // --- تعديل: أسماء المجموعات المشتركة ---
-        const SHARED_COLLECTIONS = {
-            rawMaterials: 'shared_rawMaterials',
-            spareParts: 'shared_spareParts',
-            finishedProducts: 'shared_finishedProducts',
-            wasteLog: 'shared_wasteLog',
-            transactions: 'shared_transactions'
-        };
+    <!-- التقارير -->
+    <section id="reports" class="card hidden">
+      <div class="row">
+        <div class="col-8">
+          <h2>التقارير</h2>
+          <div class="stack">
+            <select id="reportType"><option value="daily">يومي</option><option value="monthly">شهري</option></select>
+            <input id="reportDate" type="date"><input id="reportMonth" type="month" class="hidden">
+            <button class="btn" id="refreshReport">تحديث</button>
+            <button class="btn" id="shareReport">مشاركة</button>
+            <button class="btn" id="printReport">طباعة</button>
+          </div>
+          <pre id="reportText" class="card"></pre>
+        </div>
+        <div class="col-4">
+          <h2>إعدادات التقرير</h2>
+          <div class="card">
+            <label>اسم الشركة<input id="companyName" placeholder="شركة صحة"></label>
+            <label>الموقّع<input id="reportSigner" placeholder="مسؤول المخازن"></label>
+            <label>ملاحظات عامة<textarea id="reportNotes" rows="6" placeholder="يُضاف ما يلزم من ملاحظات"></textarea></label>
+            <button class="btn primary" id="saveFbCfg">حفظ إعدادات Firebase</button>
+            <div class="row" style="margin-top:8px">
+              <div class="col-6"><label>apiKey<input id="fb_apiKey"></label></div>
+              <div class="col-6"><label>authDomain<input id="fb_authDomain"></label></div>
+              <div class="col-6"><label>projectId<input id="fb_projectId"></label></div>
+              <div class="col-6"><label>appId<input id="fb_appId"></label></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        const App = {
-            db: null, userId: null, auth: null,
-            state: { rawMaterials: [], spareParts: [], finishedProducts: [], wasteLog: [], transactions: [] },
-            unsubscribers: [],
-            listenersAttached: false,
+    <!-- قطع الغيار -->
+    <section id="spares" class="card hidden">
+      <div class="row">
+        <div class="col-8">
+          <h2>مخزون قطع الغيار</h2>
+          <table><thead>
+            <tr><th>الصنف</th><th>الآلة/القطاع</th><th>الكمية</th><th>حد إعادة الطلب</th><th></th></tr>
+          </thead><tbody id="sparesTableBody"></tbody></table>
+          <h3>سجل الاستخدام</h3>
+          <table><thead>
+            <tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>الآلة/القطاع</th><th>ملاحظات</th></tr>
+          </thead><tbody id="sparesLogBody"></tbody></table>
+        </div>
+        <div class="col-4">
+          <h2>إضافة/تعديل قطعة غيار</h2>
+          <div class="stack card">
+            <label>الاسم<input id="spName"></label>
+            <label>الآلة/القطاع<input id="spMachine" placeholder="خط التعبئة / المضخة"></label>
+            <label>المخزون<input id="spQty" type="number" step="1"></label>
+            <label>حد إعادة الطلب<input id="spReorder" type="number" step="1"></label>
+            <div class="stack"><button class="btn primary" id="saveSpare">حفظ</button><button class="btn" id="resetSpare">جديد</button></div>
+          </div>
+          <h2>خصم استخدام</h2>
+          <div class="stack card">
+            <label>الصنف<select id="spUseName"></select></label>
+            <label>الكمية المستخدمة<input id="spUseQty" type="number" step="1"></label>
+            <label>الآلة/القطاع<input id="spUseMachine"></label>
+            <label>ملاحظات<textarea id="spUseNotes"></textarea></label>
+            <button class="btn" id="applySpareUse">تسجيل الخصم</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-            init(db, user, auth) {
-                if (this.db) return; 
-                console.log("Initializing App with Anonymous User ID:", user.uid);
-                this.db = db; this.userId = user.uid; this.auth = auth;
-                this.setupEventListeners();
-                this.router.init();
-                this.attachDataListeners(); 
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-            },
-
-            attachDataListeners() {
-                if (!this.db) { console.error("Firestore DB not initialized. Cannot attach listeners."); return; }
-                
-                this.unsubscribers.forEach(unsub => unsub()); 
-                this.unsubscribers = [];
-                
-                // استخدام الأسماء من SHARED_COLLECTIONS
-                Object.keys(SHARED_COLLECTIONS).forEach(stateKey => {
-                    const collectionName = SHARED_COLLECTIONS[stateKey];
-                    const collectionRef = collection(this.db, collectionName); // المسار الصحيح الآن
-                    console.log(`Listening to shared collection: ${collectionName}`);
-
-                    const unsub = onSnapshot(collectionRef, (snapshot) => {
-                        console.log(`Data received for ${collectionName}:`, snapshot.docs.length, 'docs');
-                        // التأكد من تحديث المفتاح الصحيح في state
-                        this.state[stateKey] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        this.renderAll(); 
-                    }, (error) => console.error(`Error listening to ${collectionName}:`, error));
-                    this.unsubscribers.push(unsub);
-                });
-            },
-
-            setupEventListeners() {
-                if (this.listenersAttached) return; 
-                console.log("Setting up event listeners.");
-                document.querySelector('.nav-menu').addEventListener('click', e => { const link = e.target.closest('a'); if (link) { e.preventDefault(); this.router.navigateTo(link.hash); } });
-                document.getElementById('hamburgerBtn').addEventListener('click', () => document.getElementById('sidebar').classList.add('open'));
-                document.getElementById('closeBtn').addEventListener('click', () => document.getElementById('sidebar').classList.remove('open'));
-                document.getElementById('addRawMaterialBtn').addEventListener('click', () => this.rawMaterials.add());
-                document.getElementById('rawMaterialsSearch').addEventListener('input', (e) => this.render.rawMaterials(e.target.value));
-                document.getElementById('rawMaterialsTable').addEventListener('click', e => { if (e.target.dataset.id) { if (e.target.classList.contains('edit-btn')) this.rawMaterials.edit(e.target.dataset.id); if (e.target.classList.contains('delete-btn')) this.rawMaterials.delete(e.target.dataset.id); } });
-                document.getElementById('addSparePartBtn').addEventListener('click', () => this.spareParts.add());
-                document.getElementById('sparePartsSearch').addEventListener('input', (e) => this.render.spareParts(e.target.value));
-                document.getElementById('sparePartsTable').addEventListener('click', e => { if (e.target.dataset.id) { if (e.target.classList.contains('edit-btn')) this.spareParts.edit(e.target.dataset.id); if (e.target.classList.contains('delete-btn')) this.spareParts.delete(e.target.dataset.id); } });
-                document.getElementById('addProductBtn').addEventListener('click', () => this.products.add());
-                document.getElementById('finishedProductsSearch').addEventListener('input', (e) => this.render.finishedProducts(e.target.value));
-                document.getElementById('finishedProductsTable').addEventListener('click', e => { if (e.target.dataset.id) { if (e.target.classList.contains('edit-btn')) this.products.edit(e.target.dataset.id); if (e.target.classList.contains('delete-btn')) this.products.delete(e.target.dataset.id); if (e.target.classList.contains('add-production-btn')) this.products.addProduction(e.target.dataset.id); } });
-                document.getElementById('recordSaleBtn').addEventListener('click', () => this.sales.record());
-                document.getElementById('bomProductSelect').addEventListener('change', e => this.bom.showBOMForProduct(e.target.value));
-                document.getElementById('addBomItemBtn').addEventListener('click', () => this.bom.add());
-                document.getElementById('bomList').addEventListener('click', e => { if (e.target.classList.contains('delete-bom-item')) { const { productid, rmid } = e.target.dataset; this.bom.delete(productid, rmid); } });
-                document.getElementById('wasteTypeSelect').addEventListener('change', () => this.render.wasteItemSelect());
-                document.getElementById('recordWasteBtn').addEventListener('click', () => this.waste.record());
-                document.getElementById('reportType').addEventListener('change', this.reports.toggleDateInputs);
-                document.getElementById('generateReportBtn').addEventListener('click', () => this.reports.generate());
-                document.getElementById('reportDate').valueAsDate = new Date();
-                document.getElementById('reportMonth').value = new Date().toISOString().slice(0, 7);
-                document.getElementById('printReportBtn').addEventListener('click', () => this.settings.printReport());
-                document.getElementById('exportDataBtn').addEventListener('click', () => this.settings.exportData());
-                document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFileInput').click());
-                document.getElementById('importFileInput').addEventListener('change', e => this.settings.importData(e));
-                document.getElementById('deleteAllDataBtn').addEventListener('click', () => this.settings.deleteAllData());
-                this.listenersAttached = true;
-                console.log("Event listeners attached.");
-            },
-            
-            renderAll() {
-                 if (!this.state) { console.warn("App state not ready for rendering yet."); return; }
-                 console.log("Rendering all components...");
-                 try {
-                     this.render.rawMaterials();
-                     this.render.spareParts();
-                     this.render.finishedProducts();
-                     this.render.bomProductSelect();
-                     this.render.wasteItemSelect();
-                     this.render.wasteLog();
-                     this.render.salesProductSelect();
-                     this.render.salesLog();
-                     console.log("All components rendered.");
-                 } catch (e) { console.error("Error during renderAll:", e); }
-            },
-            
-            router: { /* ... كما كان ... */ },
-            render: { /* ... كما كان مع التحسينات السابقة ... */ },
-
-            // --- التعديلات في أقسام البيانات لاستخدام المسارات الصحيحة ---
-            rawMaterials: {
-                async add() { /* ... */ if (formValues) { try { await addDoc(collection(App.db, SHARED_COLLECTIONS.rawMaterials), formValues); /*...*/ } catch (e) { /*...*/ } } },
-                async edit(id) { /* ... */ if (formValues) { try { await setDoc(doc(App.db, SHARED_COLLECTIONS.rawMaterials, id), formValues, { merge: true }); /*...*/ } catch (e) { /*...*/ } } },
-                delete(id) { /* ... */ .then(async (result) => { if (result.isConfirmed) { try { await deleteDoc(doc(App.db, SHARED_COLLECTIONS.rawMaterials, id)); /*...*/ } catch (e) { /*...*/ } } }); }
-            },
-            spareParts: {
-                 async add() { /* ... */ if (formValues) { try { await addDoc(collection(App.db, SHARED_COLLECTIONS.spareParts), formValues); /*...*/ } catch (e) { /*...*/ } } },
-                 async edit(id) { /* ... */ if (formValues) { try { await setDoc(doc(App.db, SHARED_COLLECTIONS.spareParts, id), formValues, { merge: true }); /*...*/ } catch (e) { /*...*/ } } },
-                 delete(id) { /* ... */ .then(async (result) => { if (result.isConfirmed) { try { await deleteDoc(doc(App.db, SHARED_COLLECTIONS.spareParts, id)); /*...*/ } catch (e) { /*...*/ } } }); }
-            },
-            products: {
-                async add() { /* ... */ if (formValues) { try { await addDoc(collection(App.db, SHARED_COLLECTIONS.finishedProducts), formValues); /*...*/ } catch (e) { /*...*/ } } },
-                async edit(id) { /* ... */ if (formValues) { try { await setDoc(doc(App.db, SHARED_COLLECTIONS.finishedProducts, id), formValues, { merge: true }); /*...*/ } catch (e) { /*...*/ } } },
-                delete(id) { /* ... */ .then(async (result) => { if (result.isConfirmed) { try { await deleteDoc(doc(App.db, SHARED_COLLECTIONS.finishedProducts, id)); /*...*/ } catch (e) { /*...*/ } } }); },
-                async addProduction(productId) { /* ... */ if (canProduce) { try { const batch = writeBatch(App.db); rawMaterialsUsed.forEach(used => { const rmRef = doc(App.db, SHARED_COLLECTIONS.rawMaterials, used.rawMaterialId); /*...*/ batch.update(rmRef, { stock: rawMaterial.stock - used.quantity }); }); const productRef = doc(App.db, SHARED_COLLECTIONS.finishedProducts, productId); batch.update(productRef, { stock: product.stock + quantity }); const transColRef = collection(App.db, SHARED_COLLECTIONS.transactions); batch.set(doc(transColRef), { /*...*/ }); await batch.commit(); /*...*/ } catch (e) { /*...*/ } } } }
-            },
-            sales: {
-                async record() { /* ... */ try { const batch = writeBatch(App.db); const productRef = doc(App.db, SHARED_COLLECTIONS.finishedProducts, productId); batch.update(productRef, { stock: product.stock - quantity }); const transColRef = collection(App.db, SHARED_COLLECTIONS.transactions); batch.set(doc(transColRef), { /*...*/ }); await batch.commit(); /*...*/ } catch (e) { /*...*/ } }
-            },
-            bom: {
-                showBOMForProduct(productId) { /* ... */ },
-                async add() { /* ... */ const productRef = doc(App.db, SHARED_COLLECTIONS.finishedProducts, productId); /*...*/ try { await updateDoc(productRef, { bom: newBom }); /*...*/ } catch (e) { /*...*/ } },
-                async delete(productId, rawMaterialId) { const productRef = doc(App.db, SHARED_COLLECTIONS.finishedProducts, productId); /*...*/ try { await updateDoc(productRef, { bom: newBom }); } catch (e) { /*...*/ } }
-            },
-            waste: {
-                async record() { 
-                    /* ... */ 
-                    let collectionNameFirebase;
-                    if(type === 'raw') { collectionNameFirebase = SHARED_COLLECTIONS.rawMaterials; }
-                    else if(type === 'spare') { collectionNameFirebase = SHARED_COLLECTIONS.spareParts; }
-                    else { collectionNameFirebase = SHARED_COLLECTIONS.finishedProducts; }
-                    /* ... */ 
-                    try { 
-                        const batch = writeBatch(App.db); 
-                        const itemRef = doc(App.db, collectionNameFirebase, itemId); 
-                        batch.update(itemRef, { stock: item.stock - quantity }); 
-                        const wasteColRef = collection(App.db, SHARED_COLLECTIONS.wasteLog); 
-                        batch.set(doc(wasteColRef), { /*...*/ }); 
-                        await batch.commit(); 
-                        /*...*/ 
-                    } catch (e) { /*...*/ } 
-                }
-            },
-            reports: { /* ... */ },
-             settings: {
-                 exportData() { /* ... */ },
-                 importData(event) { 
-                     /* ... */ 
-                     .then(async (result) => { 
-                         if (result.isConfirmed) { 
-                             const batch = writeBatch(App.db); 
-                             // استخدام الأسماء من SHARED_COLLECTIONS
-                             for (const key in SHARED_COLLECTIONS) {
-                                 const colName = SHARED_COLLECTIONS[key];
-                                 const querySnapshot = await getDocs(collection(App.db, colName)); 
-                                 querySnapshot.forEach(doc => batch.delete(doc.ref)); 
-                             }
-                             await batch.commit(); 
-                             
-                             const importBatch = writeBatch(App.db); 
-                             Object.keys(SHARED_COLLECTIONS).forEach(stateKey => {
-                                 const collectionNameFirebase = SHARED_COLLECTIONS[stateKey];
-                                 if(newState[stateKey]) { 
-                                     newState[stateKey].forEach(item => { 
-                                         const { id, ...data } = item; 
-                                         // استخدام collectionNameFirebase الصحيح
-                                         const docRef = id ? doc(App.db, collectionNameFirebase, id) : doc(collection(App.db, collectionNameFirebase)); 
-                                         importBatch.set(docRef, data); // استخدام importBatch
-                                     }); 
-                                 } 
-                             }); 
-                             await importBatch.commit(); 
-                             /*...*/ 
-                         } 
-                     }); 
-                     /*...*/ 
-                 },
-                 async deleteAllData() { 
-                     /* ... */ 
-                     .then(async (result) => { 
-                         if (result.isConfirmed) { 
-                             const batch = writeBatch(App.db); 
-                              // استخدام الأسماء من SHARED_COLLECTIONS
-                             for (const key in SHARED_COLLECTIONS) {
-                                 const colName = SHARED_COLLECTIONS[key];
-                                 const querySnapshot = await getDocs(collection(App.db, colName)); 
-                                 querySnapshot.forEach(doc => batch.delete(doc.ref)); 
-                             }
-                             await batch.commit(); 
-                             /*...*/ 
-                         } 
-                     }); 
-                 },
-                 printReport() { /* ... */ }
-            }
-        };
-
-        // --- Auth Handling (Modified for Anonymous Auth) ---
-        try {
-            console.log("Initializing Firebase...");
-            const firebaseApp = initializeApp(firebaseConfig);
-            const auth = getAuth(firebaseApp);
-            const db = getFirestore(firebaseApp);
-            
-            enableIndexedDbPersistence(db)
-              .catch((err) => {
-                  if (err.code == 'failed-precondition') { console.warn('Firebase persistence failed: multiple tabs open.'); } 
-                  else if (err.code == 'unimplemented') { console.error('Firebase persistence is not available in this browser.'); }
-              });
-
-            onAuthStateChanged(auth, user => {
-                if (user) {
-                    console.log("User is signed in:", user.uid, "Is anonymous:", user.isAnonymous);
-                    if (!App.db) { App.init(db, user, auth); } 
-                    else { App.userId = user.uid; console.log("App already initialized, updated userId if changed."); }
-                } else {
-                    console.log("User is signed out. Signing in anonymously...");
-                    signInAnonymously(auth)
-                        .then(() => { console.log("Signed in anonymously successfully."); })
-                        .catch((error) => {
-                            console.error("Anonymous sign-in error", error);
-                            Swal.fire('خطأ فادح', 'لم نتمكن من تسجيل الدخول المجهول.', 'error');
-                            document.getElementById('loading-screen').innerHTML = '<h1>فشل تسجيل الدخول المجهول.</h1>';
-                        });
-                }
-            });
-        } catch (e) {
-            console.error("Firebase initialization failed:", e);
-             document.getElementById('loading-screen').innerHTML = '<h1>فشل تهيئة Firebase.</h1>';
-        }
-    </script>
+  <script type="module" src="js/app.js"></script>
+  <script>
+    // تنقل الأقسام
+    const $$ = s=>Array.from(document.querySelectorAll(s));
+    $$('#nav button').forEach(btn=>btn.addEventListener('click',()=>{
+      $$('#nav button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const sec = btn.dataset.section;
+      document.querySelectorAll('main > section').forEach(s=>s.classList.add('hidden'));
+      document.getElementById(sec).classList.remove('hidden');
+      window.dispatchEvent(new CustomEvent('saha:render'));
+    }));
+  </script>
 </body>
 </html>
-
