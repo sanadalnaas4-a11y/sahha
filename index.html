@@ -14,9 +14,6 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     
-    <!-- تم حذف ملف الـ CSS الخارجي -->
-    <!-- <link rel="stylesheet" href="styles.css"> -->
-
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- jsPDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -24,7 +21,7 @@
     <!-- html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-    <!-- تم إرجاع أكواد الـ CSS ودمجها هنا -->
+    <!-- أكواد الـ CSS المدمجة -->
     <style>
         :root {
             --sidebar-bg: linear-gradient(180deg, #1e40af 0%, #1d4ed8 100%);
@@ -51,7 +48,7 @@
             line-height: 1.6;
         }
         
-        /* شاشة التحميل (من الكود الأصلي) */
+        /* شاشة التحميل */
         #loading-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100vh; background-color: var(--background-color); text-align: center; padding: 2rem; }
         #loading-screen img { max-width: 150px; margin-bottom: 2rem; border-radius: 20px; }
         #loading-screen p { font-size: 1.2rem; color: var(--text-secondary); margin-top: 1rem; }
@@ -83,11 +80,11 @@
             z-index: 100;
         }
 
-        .sidebar .logo-container { text-align: center; margin-bottom: 1.5rem; } /* تم تعديل margin-bottom من styles.css الأصلي */
+        .sidebar .logo-container { text-align: center; margin-bottom: 1.5rem; }
         .sidebar .logo { max-width: 80px; height: auto; border-radius: 50%; border: 3px solid var(--primary-accent); background-color: #fff; }
-        .sidebar h1 { text-align: center; margin-top: 0.5rem; font-size: 1.8rem; margin-bottom: 2rem; } /* تم إضافة margin-bottom */
+        .sidebar h1 { text-align: center; margin-top: 0.5rem; font-size: 1.8rem; margin-bottom: 2rem; }
 
-        .nav-menu ul { list-style-type: none; padding: 0; } /* تم إضافة padding: 0 */
+        .nav-menu ul { list-style-type: none; padding: 0; }
         .nav-menu li { margin-bottom: 0.5rem; }
         .nav-menu a { display: flex; align-items: center; padding: 0.9rem; color: var(--white-text); text-decoration: none; border-radius: 12px; transition: all 0.2s ease-in-out; font-size: 1.1rem; font-weight: 500; gap: 12px; }
         .nav-menu a:hover { background-color: rgba(255, 255, 255, 0.1); }
@@ -110,7 +107,6 @@
         label { font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
         input, select { padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 10px; font-family: 'Tajawal', sans-serif; font-size: 1rem; }
         
-        /* تم إضافة :focus styles من styles.css */
         input:focus, select:focus { outline: none; border-color: var(--primary-accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
 
         .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 10px; font-family: 'Tajawal', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
@@ -122,25 +118,22 @@
         .btn-secondary { background-color: var(--border-color); color: var(--text-primary); }
         .btn-secondary:hover { background-color: #d1d5db; }
 
-        /* تم إضافة :active و :hover للـ btn من styles.css */
         .btn:active { transform: scale(0.97); }
         .btn:hover { filter: brightness(1.1); }
         .btn .icon { width: 20px; height: 20px; }
 
 
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; overflow-x: auto; display: block; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; /* تم حذف overflow-x: auto; display: block; لجعل التجاوب يعمل */ }
         .data-table th, .data-table td { padding: 1rem 1.2rem; text-align: right; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
         .data-table thead { background-color: #f9fafb; }
         .data-table th { font-weight: 800; color: var(--text-secondary); text-transform: uppercase; font-size: 0.9rem; }
         
-        /* تم إضافة tr:hover من styles.css */
         .data-table tbody tr { transition: background-color 0.2s; }
         .data-table tbody tr:hover { background-color: #f3f4f6; }
         
         .data-table td .actions { display: flex; gap: 0.5rem; }
         .low-stock { background-color: #fef2f2 !important; color: var(--danger-color); font-weight: 700; }
         
-        /* تم إضافة .low-stock::after من styles.css */
         .low-stock::after { content: '⚠️'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); }
 
         .bom-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-radius: 8px; }
@@ -150,7 +143,6 @@
         .report-controls { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
         #reportContent { padding: 2rem; }
         
-        /* تم تحديث ستايل التقارير من styles.css */
         #textReportOutput { background-color: #f9fafb; border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 2rem; }
         #textReportOutput h3, #textReportOutput h4 { margin-bottom: 1rem; font-family: 'Tajawal', sans-serif; }
         #textReportOutput h3 { color: var(--text-primary); border-bottom: 2px solid var(--primary-accent); padding-bottom: 0.5rem; }
@@ -160,7 +152,8 @@
         #textReportOutput .report-item h4 { color: var(--text-secondary); }
         #textReportOutput .report-item p { margin: 0.25rem 0; }
         #textReportOutput .report-item strong { color: var(--text-primary); }
-        #textReportOutput .data-table { margin-top: 0; }
+        /* الجداول داخل التقرير تحتاج أيضاً لـ overflow-x */
+        #textReportOutput .data-table { margin-top: 0; display: block; overflow-x: auto; }
         #textReportOutput .data-table th, #textReportOutput .data-table td { padding: 0.75rem; }
         
         .hamburger, .close-btn { display: none; cursor: pointer; background: none; border: none; font-size: 2rem; z-index: 101; }
@@ -175,12 +168,100 @@
             .close-btn { display: block; } 
         }
 
-        /* تم إضافة media query من styles.css */
         @media (max-width: 576px) {
             .page-header { flex-direction: column; align-items: flex-start; }
             .page-header h2 { font-size: 2rem; }
             .main-content { padding: 1rem; }
         }
+
+        /* --- (((( هذا هو الكود المضاف للتجاوب مع الهاتف )))) --- */
+        @media (max-width: 768px) {
+            .data-table {
+                box-shadow: none;
+            }
+            .data-table thead {
+                display: none; /* إخفاء رأس الجدول */
+            }
+            .data-table tr {
+                display: block; /* تحويل كل صف إلى بطاقة */
+                margin-bottom: 1.5rem;
+                border-radius: var(--border-radius);
+                border: 1px solid var(--border-color);
+                box-shadow: var(--card-shadow);
+                background: var(--card-bg);
+            }
+            .data-table td {
+                display: block; /* جعل الخلايا عمودية */
+                text-align: left; /* محاذاة النص لليسار */
+                padding: 0.75rem 1rem;
+                padding-right: 50%; /* مساحة لاسم الحقل */
+                position: relative;
+                border-bottom: 1px solid var(--border-color);
+                white-space: normal; /* السماح بالتفاف النص */
+            }
+            .data-table td:last-child {
+                border-bottom: none;
+            }
+            /* إضافة اسم الحقل قبل القيمة */
+            .data-table td:before {
+                content: attr(data-label); /* جلب النص من data-label */
+                position: absolute;
+                top: 0;
+                right: 0; /* تحديد مكان اسم الحقل */
+                width: 45%; /* عرض اسم الحقل */
+                padding: 0.75rem 1rem;
+                text-align: right;
+                font-weight: 700;
+                color: var(--text-primary);
+                white-space: nowrap;
+            }
+            /* تنسيق خاص لخلية الإجراءات (الأزرار) */
+            .data-table td.actions {
+                padding: 0.75rem 1rem;
+                text-align: center; /* توسيط الأزرار */
+            }
+            .data-table td.actions:before {
+                display: none; /* إخفاء اسم الحقل "إجراءات" */
+            }
+            .data-table td .actions {
+                justify-content: center; /* توسيط الأزرار أفقياً */
+                gap: 0.75rem;
+                flex-wrap: wrap; /* السماح للأزرار بالالتفاف */
+            }
+            .data-table td .actions .btn {
+                flex-grow: 1; /* جعل الأزرار تتمدد لملء المساحة */
+                min-width: 100px;
+            }
+            /* إصلاح جداول التقرير على الموبايل */
+            #textReportOutput .data-table {
+                display: block;
+                overflow-x: auto; /* الجداول في التقرير نجعلها قابلة للسحب أفقياً */
+                border: none;
+                box-shadow: none;
+            }
+            #textReportOutput .data-table tr {
+                display: table-row; /* إرجاعها لوضعها الطبيعي */
+                margin-bottom: 0;
+                border: none;
+                box-shadow: none;
+            }
+            #textReportOutput .data-table td {
+                display: table-cell; /* إرجاعها لوضعها الطبيعي */
+                text-align: right;
+                padding: 0.75rem;
+                padding-right: 0.75rem;
+                position: static;
+                border-bottom: 1px solid var(--border-color);
+                white-space: nowrap;
+            }
+            #textReportOutput .data-table td:before {
+                display: none; /* إخفاء الـ labels في التقرير */
+            }
+            #textReportOutput .data-table thead {
+                display: table-header-group; /* إظهار رأس الجدول في التقرير */
+            }
+        }
+        /* --- (((( نهاية الكود المضاف )))) --- */
     </style>
 </head>
 <body>
@@ -376,28 +457,105 @@
                  } catch (e) { console.error("Error during renderAll:", e); }
             },
             
-            // --- جميع الأقسام (router, render, rawMaterials, etc.) تبقى كما هي ---
-            // --- ... (تم إخفاؤها للاختصار، هي نفسها الموجودة في الملف الأصلي) ... ---
             router: { 
                 pages: null, navLinks: null,
                 init() { this.pages = document.querySelectorAll('.page'); this.navLinks = document.querySelectorAll('.nav-link'); const currentHash = window.location.hash || '#rawMaterials'; this.navigateTo(currentHash); window.addEventListener('hashchange', () => this.navigateTo(window.location.hash)); },
                 navigateTo(hash) { if(!hash) hash = '#rawMaterials'; const targetPageId = hash.substring(1) + 'Page'; this.pages.forEach(page => page.classList.toggle('active', page.id === targetPageId)); this.navLinks.forEach(link => link.classList.toggle('active', link.hash === hash)); document.getElementById('sidebar').classList.remove('open'); }
             },
+
+            // --- (((( هنا تم تعديل دوال الـ Render لإضافة data-label )))) ---
             render: {
-                rawMaterials(searchTerm = '') { const tableBody = document.getElementById('rawMaterialsTable'); const filtered = App.state.rawMaterials.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())); tableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="6" style="text-align:center;">لم يتم إضافة مواد خام بعد.</td></tr>` : filtered.map(item => `<tr class="${item.stock <= item.threshold ? 'low-stock' : ''}"><td>${item.name}</td><td>${item.supplier || 'N/A'}</td><td>${item.unit}</td><td>${item.stock}</td><td>${item.threshold}</td><td class="actions"><button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button></td></tr>`).join(''); },
-                spareParts(searchTerm = '') { const tableBody = document.getElementById('sparePartsTable'); const filtered = App.state.spareParts.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())); tableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="6" style="text-align:center;">لم يتم إضافة قطع غيار بعد.</td></tr>` : filtered.map(item => `<tr class="${item.stock <= item.threshold ? 'low-stock' : ''}"><td>${item.name}</td><td>${item.supplier || 'N/A'}</td><td>${item.unit}</td><td>${item.stock}</td><td>${item.threshold}</td><td class="actions"><button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button></td></tr>`).join(''); },
-                finishedProducts(searchTerm = '') { const tableBody = document.getElementById('finishedProductsTable'); const filtered = App.state.finishedProducts.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())); tableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="4" style="text-align:center;">لم يتم إضافة منتجات جاهزة بعد.</td></tr>` : filtered.map(item => `<tr><td>${item.name}</td><td>${item.unit}</td><td>${item.stock}</td><td class="actions"><button class="btn btn-success btn-sm add-production-btn" data-id="${item.id}">إضافة إنتاج</button><button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button></td></tr>`).join(''); },
+                rawMaterials(searchTerm = '') { 
+                    const tableBody = document.getElementById('rawMaterialsTable'); 
+                    const filtered = App.state.rawMaterials.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())); 
+                    tableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="6" style="text-align:center;">لم يتم إضافة مواد خام بعد.</td></tr>` 
+                    : filtered.map(item => 
+                        `<tr class="${item.stock <= item.threshold ? 'low-stock' : ''}">
+                            <td data-label="اسم المادة">${item.name}</td>
+                            <td data-label="المورد">${item.supplier || 'N/A'}</td>
+                            <td data-label="الوحدة">${item.unit}</td>
+                            <td data-label="الكمية الحالية">${item.stock}</td>
+                            <td data-label="حد التنبيه">${item.threshold}</td>
+                            <td class="actions">
+                                <button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button>
+                                <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button>
+                            </td>
+                        </tr>`).join(''); 
+                },
+                spareParts(searchTerm = '') { 
+                    const tableBody = document.getElementById('sparePartsTable'); 
+                    const filtered = App.state.spareParts.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())); 
+                    tableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="6" style="text-align:center;">لم يتم إضافة قطع غيار بعد.</td></tr>` 
+                    : filtered.map(item => 
+                        `<tr class="${item.stock <= item.threshold ? 'low-stock' : ''}">
+                            <td data-label="اسم القطعة">${item.name}</td>
+                            <td data-label="المورد">${item.supplier || 'N/A'}</td>
+                            <td data-label="الوحدة">${item.unit}</td>
+                            <td data-label="الكمية الحالية">${item.stock}</td>
+                            <td data-label="حد التنبيه">${item.threshold}</td>
+                            <td class="actions">
+                                <button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button>
+                                <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button>
+                            </td>
+                        </tr>`).join(''); 
+                },
+                finishedProducts(searchTerm = '') { 
+                    const tableBody = document.getElementById('finishedProductsTable'); 
+                    const filtered = App.state.finishedProducts.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())); 
+                    tableBody.innerHTML = filtered.length === 0 ? `<tr><td colspan="4" style="text-align:center;">لم يتم إضافة منتجات جاهزة بعد.</td></tr>` 
+                    : filtered.map(item => 
+                        `<tr>
+                            <td data-label="اسم المنتج">${item.name}</td>
+                            <td data-label="الوحدة">${item.unit}</td>
+                            <td data-label="الكمية الحالية">${item.stock}</td>
+                            <td class="actions">
+                                <button class="btn btn-success btn-sm add-production-btn" data-id="${item.id}">إضافة إنتاج</button>
+                                <button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}">تعديل</button>
+                                <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}">حذف</button>
+                            </td>
+                        </tr>`).join(''); 
+                },
                 salesProductSelect() { const select = document.getElementById('salesProductSelect'); select.innerHTML = '<option value="">-- اختر منتج --</option>' + App.state.finishedProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join(''); },
-                salesLog() { const tableBody = document.getElementById('salesLogTable'); const salesTransactions = App.state.transactions.filter(t => t.type === 'sale').sort((a,b) => new Date(b.date) - new Date(a.date)); if (salesTransactions.length === 0) { tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;">لا يوجد سجلات مبيعات.</td></tr>`; return; } tableBody.innerHTML = salesTransactions.map(log => { const item = App.state.finishedProducts.find(i => i.id === log.itemId); return `<tr><td>${new Date(log.date).toLocaleString('ar-EG')}</td><td>${item ? item.name : 'منتج محذوف'}</td><td>${log.quantity}</td></tr>`; }).join(''); },
+                salesLog() { 
+                    const tableBody = document.getElementById('salesLogTable'); 
+                    const salesTransactions = App.state.transactions.filter(t => t.type === 'sale').sort((a,b) => new Date(b.date) - new Date(a.date)); 
+                    if (salesTransactions.length === 0) { tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;">لا يوجد سجلات مبيعات.</td></tr>`; return; } 
+                    tableBody.innerHTML = salesTransactions.map(log => { 
+                        const item = App.state.finishedProducts.find(i => i.id === log.itemId); 
+                        return `<tr>
+                                    <td data-label="التاريخ">${new Date(log.date).toLocaleString('ar-EG')}</td>
+                                    <td data-label="اسم المنتج">${item ? item.name : 'منتج محذوف'}</td>
+                                    <td data-label="الكمية">${log.quantity}</td>
+                                </tr>`; 
+                    }).join(''); 
+                },
                 bomProductSelect() { const select = document.getElementById('bomProductSelect'); select.innerHTML = '<option value="">-- اختر منتج --</option>' + App.state.finishedProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join(''); },
                 bomList(productId) { const product = App.state.finishedProducts.find(p => p.id === productId); const listDiv = document.getElementById('bomList'); if (!product || !product.bom || product.bom.length === 0) { listDiv.innerHTML = '<p>لا توجد مكونات لهذا المنتج.</p>'; return; } listDiv.innerHTML = product.bom.map(item => { const rawMaterial = App.state.rawMaterials.find(rm => rm.id === item.rawMaterialId); return `<div class="bom-item"><span><strong>${rawMaterial ? rawMaterial.name : 'مادة محذوفة'}</strong>: ${item.quantity} ${rawMaterial ? rawMaterial.unit : ''}</span><button class="btn btn-danger btn-sm delete-bom-item" data-productid="${productId}" data-rmid="${item.rawMaterialId}">&times;</button></div>`; }).join(''); },
                 bomRawMaterialSelect() { const select = document.getElementById('bomRawMaterialSelect'); select.innerHTML = '<option value="">-- اختر مادة خام --</option>' + App.state.rawMaterials.map(rm => `<option value="${rm.id}">${rm.name}</option>`).join(''); },
                 wasteItemSelect(type = 'raw') { const select = document.getElementById('wasteItemSelect'); let items = []; if(type === 'raw') items = App.state.rawMaterials; else if(type === 'spare') items = App.state.spareParts; else items = App.state.finishedProducts; select.innerHTML = '<option value="">-- اختر صنف --</option>' + items.map(i => `<option value="${i.id}">${i.name}</option>`).join(''); },
-                wasteLog() { const tableBody = document.getElementById('wasteLogTable'); const wasteLogs = App.state.wasteLog.sort((a,b) => new Date(b.date) - new Date(a.date)); if(wasteLogs.length === 0) { tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">لا يوجد سجلات هدر.</td></tr>`; return; } tableBody.innerHTML = wasteLogs.map(log => { let item; let typeAr; if(log.type === 'raw') { item = App.state.rawMaterials.find(i => i.id === log.itemId); typeAr = 'مادة خام'; } else if(log.type === 'spare') { item = App.state.spareParts.find(i => i.id === log.itemId); typeAr = 'قطعة غيار'; } else { item = App.state.finishedProducts.find(i => i.id === log.itemId); typeAr = 'منتج جاهز'; } return `<tr><td>${new Date(log.date).toLocaleString('ar-EG')}</td><td>${typeAr}</td><td>${item ? item.name : 'صنف محذوف'}</td><td>${log.quantity}</td></tr>`; }).join(''); },
+                wasteLog() { 
+                    const tableBody = document.getElementById('wasteLogTable'); 
+                    const wasteLogs = App.state.wasteLog.sort((a,b) => new Date(b.date) - new Date(a.date)); 
+                    if(wasteLogs.length === 0) { tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">لا يوجد سجلات هدر.</td></tr>`; return; } 
+                    tableBody.innerHTML = wasteLogs.map(log => { 
+                        let item; let typeAr; 
+                        if(log.type === 'raw') { item = App.state.rawMaterials.find(i => i.id === log.itemId); typeAr = 'مادة خام'; } 
+                        else if(log.type === 'spare') { item = App.state.spareParts.find(i => i.id === log.itemId); typeAr = 'قطعة غيار'; } 
+                        else { item = App.state.finishedProducts.find(i => i.id === log.itemId); typeAr = 'منتج جاهز'; } 
+                        return `<tr>
+                                    <td data-label="التاريخ">${new Date(log.date).toLocaleString('ar-EG')}</td>
+                                    <td data-label="نوع الصنف">${typeAr}</td>
+                                    <td data-label="اسم الصنف">${item ? item.name : 'صنف محذوف'}</td>
+                                    <td data-label="الكمية">${log.quantity}</td>
+                                </tr>`; 
+                    }).join(''); 
+                },
             },
+            // --- (((( نهاية تعديل دوال الـ Render )))) ---
+
             rawMaterials: {
                 async add() { const { value: formValues } = await Swal.fire({ title: 'إضافة مادة خام جديدة', html: `<input id="swal-name" class="swal2-input" placeholder="اسم المادة" required><input id="swal-supplier" class="swal2-input" placeholder="المورد (اختياري)"><input id="swal-unit" class="swal2-input" placeholder="وحدة القياس (مثال: قطعة, لتر)"><input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الأولية" value="0" min="0"><input id="swal-threshold" type="number" class="swal2-input" placeholder="حد التنبيه (الكمية الأدنى)" value="0" min="0">`, focusConfirm: false, confirmButtonText: 'إضافة', cancelButtonText: 'إلغاء', showCancelButton: true, preConfirm: () => { const name = document.getElementById('swal-name').value; if (!name) { Swal.showValidationMessage(`اسم المادة مطلوب`); return false; } return { name: name, supplier: document.getElementById('swal-supplier').value, unit: document.getElementById('swal-unit').value, stock: parseFloat(document.getElementById('swal-stock').value) || 0, threshold: parseFloat(document.getElementById('swal-threshold').value) || 0, } } }); if (formValues) { try { await addDoc(collection(App.db, SHARED_COLLECTIONS.rawMaterials), formValues); Swal.fire('تم!', 'تمت إضافة المادة الخام بنجاح.', 'success'); } catch (e) { console.error("Error adding document: ", e); Swal.fire('خطأ', 'لم نتمكن من إضافة المادة.', 'error'); } } },
-                async edit(id) { const item = App.state.rawMaterials.find(i => i.id === id); if (!item) return; const { value: formValues } = await Swal.fire({ title: 'تعديل مادة خام', html: `<input id="swal-name" class="swال2-input" placeholder="اسم المادة" value="${item.name}" required><input id="swal-supplier" class="swal2-input" placeholder="المورد (اختياري)" value="${item.supplier || ''}"><input id="swal-unit" class="swal2-input" placeholder="وحدة القياس" value="${item.unit}"><input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الحالية" value="${item.stock}" min="0"><input id="swal-threshold" type="number" class="swal2-input" placeholder="حد التنبيه" value="${item.threshold}" min="0">`, focusConfirm: false, confirmButtonText: 'حفظ التعديلات', cancelButtonText: 'إلغاء', showCancelButton: true, preConfirm: () => { const name = document.getElementById('swal-name').value; if (!name) { Swal.showValidationMessage(`اسم المادة مطلوب`); return false; } return { name: name, supplier: document.getElementById('swal-supplier').value, unit: document.getElementById('swal-unit').value, stock: parseFloat(document.getElementById('swal-stock').value) || 0, threshold: parseFloat(document.getElementById('swal-threshold').value) || 0, } } }); if (formValues) { try { await setDoc(doc(App.db, SHARED_COLLECTIONS.rawMaterials, id), formValues, { merge: true }); Swal.fire('تم!', 'تم تحديث المادة الخام بنجاح.', 'success'); } catch (e) { console.error("Error updating document: ", e); Swal.fire('خطأ', 'لم نتمكن من تحديث المادة.', 'error'); } } },
+                async edit(id) { const item = App.state.rawMaterials.find(i => i.id === id); if (!item) return; const { value: formValues } = await Swal.fire({ title: 'تعديل مادة خام', html: `<input id="swal-name" class="swal2-input" placeholder="اسم المادة" value="${item.name}" required><input id="swal-supplier" class="swal2-input" placeholder="المورد (اختياري)" value="${item.supplier || ''}"><input id="swال-unit" class="swal2-input" placeholder="وحدة القياس" value="${item.unit}"><input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الحالية" value="${item.stock}" min="0"><input id="swal-threshold" type="number" class="swal2-input" placeholder="حد التنبيه" value="${item.threshold}" min="0">`, focusConfirm: false, confirmButtonText: 'حفظ التعديلات', cancelButtonText: 'إلغاء', showCancelButton: true, preConfirm: () => { const name = document.getElementById('swal-name').value; if (!name) { Swal.showValidationMessage(`اسم المادة مطلوب`); return false; } return { name: name, supplier: document.getElementById('swal-supplier').value, unit: document.getElementById('swal-unit').value, stock: parseFloat(document.getElementById('swal-stock').value) || 0, threshold: parseFloat(document.getElementById('swal-threshold').value) || 0, } } }); if (formValues) { try { await setDoc(doc(App.db, SHARED_COLLECTIONS.rawMaterials, id), formValues, { merge: true }); Swal.fire('تم!', 'تم تحديث المادة الخام بنجاح.', 'success'); } catch (e) { console.error("Error updating document: ", e); Swal.fire('خطأ', 'لم نتمكن من تحديث المادة.', 'error'); } } },
                 delete(id) { Swal.fire({ title: 'هل أنت متأكد؟', text: "سيتم حذف هذه المادة الخام نهائيًا!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'نعم، احذفه!', cancelButtonText: 'إلغاء' }).then(async (result) => { if (result.isConfirmed) { try { await deleteDoc(doc(App.db, SHARED_COLLECTIONS.rawMaterials, id)); Swal.fire('تم الحذف!', 'تم حذف المادة الخام.', 'success'); } catch (e) { console.error("Error deleting document: ", e); Swal.fire('خطأ', 'لم نتمكن من حذف المادة.', 'error'); } } }); }
             },
             spareParts: {
@@ -422,10 +580,83 @@
             waste: {
                 async record() { const type = document.getElementById('wasteTypeSelect').value; const itemId = document.getElementById('wasteItemSelect').value; const quantity = parseFloat(document.getElementById('wasteQty').value); if(!itemId || !quantity || quantity <= 0) { Swal.fire('خطأ', 'الرجاء اختيار صنف وإدخال كمية صحيحة.', 'error'); return; } let items, collectionNameFirebase, item, itemName, typeAr; if(type === 'raw') { items = App.state.rawMaterials; collectionNameFirebase = SHARED_COLLECTIONS.rawMaterials; typeAr = 'مادة خام'; } else if(type === 'spare') { items = App.state.spareParts; collectionNameFirebase = SHARED_COLLECTIONS.spareParts; typeAr = 'قطعة غيار'; } else { items = App.state.finishedProducts; collectionNameFirebase = SHARED_COLLECTIONS.finishedProducts; typeAr = 'منتج جاهز'; } item = items.find(i => i.id === itemId); itemName = item ? item.name : 'صنف محذوف'; if (!item || item.stock < quantity) { Swal.fire('خطأ', `الكمية المفقودة أكبر من الكمية المتاحة في المخزون (${item.stock}).`, 'error'); return; } try { const batch = writeBatch(App.db); const itemRef = doc(App.db, collectionNameFirebase, itemId); batch.update(itemRef, { stock: item.stock - quantity }); const wasteColRef = collection(App.db, SHARED_COLLECTIONS.wasteLog); batch.set(doc(wasteColRef), { id: `w_${Date.now()}`, date: new Date().toISOString(), type, typeAr, itemId, itemName, quantity }); await batch.commit(); document.getElementById('wasteQty').value = ''; Swal.fire('تم التسجيل!', 'تم تسجيل الهدر وخصمه من المخزون.', 'success'); } catch (e) { console.error("Error committing waste batch: ", e); Swal.fire('خطأ', 'حدث خطأ أثناء تسجيل الهدر.', 'error'); } }
             },
+            
+            // --- (((( هنا تم تعديل دالة التقارير لإضافة data-label )))) ---
             reports: {
                  toggleDateInputs() { const type = document.getElementById('reportType').value; const dateInput = document.getElementById('reportDate'); const monthInput = document.getElementById('reportMonth'); if (type === 'daily') { dateInput.classList.remove('hidden'); dateInput.previousElementSibling.classList.remove('hidden'); monthInput.classList.add('hidden'); monthInput.previousElementSibling.classList.add('hidden'); } else { dateInput.classList.add('hidden'); dateInput.previousElementSibling.classList.add('hidden'); monthInput.classList.remove('hidden'); monthInput.previousElementSibling.classList.remove('hidden'); } },
-                 generate() { const type = document.getElementById('reportType').value; const dateVal = document.getElementById('reportDate').value; const monthVal = document.getElementById('reportMonth').value; const outputDiv = document.getElementById('textReportOutput'); if ((type === 'daily' && !dateVal) || (type === 'monthly' && !monthVal)) { outputDiv.innerHTML = `<p style="text-align: center; color: var(--text-secondary);">الرجاء اختيار تاريخ صالح لعرض التقرير.</p>`; return; } let startDate, endDate; if (type === 'daily') { startDate = new Date(dateVal); startDate.setHours(0, 0, 0, 0); endDate = new Date(dateVal); endDate.setHours(23, 59, 59, 999); } else { const [year, month] = monthVal.split('-'); startDate = new Date(year, month - 1, 1); endDate = new Date(year, month, 0, 23, 59, 59, 999); } const transactionsInPeriod = App.state.transactions.filter(t => { const tDate = new Date(t.date); return tDate >= startDate && tDate <= endDate; }); const wasteInPeriod = App.state.wasteLog.filter(w => { const wDate = new Date(w.date); return wDate >= startDate && wDate <= endDate; }); let reportHTML = `<h3>تقرير ${type === 'daily' ? 'يومي' : 'شهري'} للفترة من ${startDate.toLocaleDateString('ar-EG')} إلى ${endDate.toLocaleDateString('ar-EG')}</h3>`; let productsSection = `<div class="report-section"><h4>1. قسم الإنتاج الجاهز والمبيعات</h4><table class="data-table"><thead><tr><th>المنتج</th><th>رصيد افتتاحي</th><th>إنتاج (+)</th><th>مبيعات (-)</th><th>هدر (-)</th><th>رصيد ختامي</th></tr></thead><tbody>`; App.state.finishedProducts.forEach(product => { const productions = transactionsInPeriod.filter(t => t.type === 'production' && t.itemId === product.id); const sales = transactionsInPeriod.filter(t => t.type === 'sale' && t.itemId === product.id); const waste = wasteInPeriod.filter(w => w.type === 'product' && w.itemId === product.id); const totalProduction = productions.reduce((sum, t) => sum + t.quantity, 0); const totalSales = sales.reduce((sum, t) => sum + t.quantity, 0); const totalWaste = waste.reduce((sum, w) => sum + w.quantity, 0); const closingBalance = product.stock; const openingBalance = closingBalance - totalProduction + totalSales + totalWaste; productsSection += `<tr><td>${product.name} (${product.unit})</td><td>${openingBalance.toFixed(2)}</td><td>${totalProduction.toFixed(2)}</td><td>${totalSales.toFixed(2)}</td><td>${totalWaste.toFixed(2)}</td><td><strong>${closingBalance.toFixed(2)}</strong></td></tr>`; }); productsSection += `</tbody></table></div>`; reportHTML += productsSection; let rawMaterialsSection = `<div class="report-section"><h4>2. قسم المواد الخام</h4><table class="data-table"><thead><tr><th>المادة الخام</th><th>رصيد افتتاحي</th><th>مستخدم (-)</th><th>هدر (-)</th><th>رصيد ختامي</th></tr></thead><tbody>`; App.state.rawMaterials.forEach(rm => { let totalUsed = 0; transactionsInPeriod.forEach(t => { if (t.type === 'production' && t.rawMaterialsUsed) { const used = t.rawMaterialsUsed.find(usedRm => usedRm.rawMaterialId === rm.id); if (used) totalUsed += used.quantity; } }); const waste = wasteInPeriod.filter(w => w.type === 'raw' && w.itemId === rm.id); const totalWaste = waste.reduce((sum, w) => sum + w.quantity, 0); const closingBalance = rm.stock; const openingBalance = closingBalance + totalUsed + totalWaste; rawMaterialsSection += `<tr><td>${rm.name} (${rm.unit})</td><td>${openingBalance.toFixed(2)}</td><td>${totalUsed.toFixed(2)}</td><td>${totalWaste.toFixed(2)}</td><td><strong>${closingBalance.toFixed(2)}</strong></td></tr>`; }); rawMaterialsSection += `</tbody></table></div>`; reportHTML += rawMaterialsSection; let sparePartsSection = `<div class="report-section"><h4>3. قسم قطع الغيار</h4><table class="data-table"><thead><tr><th>قطعة الغيار</th><th>رصيد افتتاحي</th><th>هدر (-)</th><th>رصيد ختامي</th></tr></thead><tbody>`; App.state.spareParts.forEach(sp => { const waste = wasteInPeriod.filter(w => w.type === 'spare' && w.itemId === sp.id); const totalWaste = waste.reduce((sum, w) => sum + w.quantity, 0); const closingBalance = sp.stock; const openingBalance = closingBalance + totalWaste; sparePartsSection += `<tr><td>${sp.name} (${sp.unit})</td><td>${openingBalance.toFixed(2)}</td><td>${totalWaste.toFixed(2)}</td><td><strong>${closingBalance.toFixed(2)}</strong></td></tr>`; }); sparePartsSection += `</tbody></table></div>`; reportHTML += sparePartsSection; outputDiv.innerHTML = reportHTML; }
+                 generate() { 
+                    const type = document.getElementById('reportType').value; const dateVal = document.getElementById('reportDate').value; const monthVal = document.getElementById('reportMonth').value; const outputDiv = document.getElementById('textReportOutput'); 
+                    if ((type === 'daily' && !dateVal) || (type === 'monthly' && !monthVal)) { outputDiv.innerHTML = `<p style="text-align: center; color: var(--text-secondary);">الرجاء اختيار تاريخ صالح لعرض التقرير.</p>`; return; } 
+                    let startDate, endDate; 
+                    if (type === 'daily') { startDate = new Date(dateVal); startDate.setHours(0, 0, 0, 0); endDate = new Date(dateVal); endDate.setHours(23, 59, 59, 999); } 
+                    else { const [year, month] = monthVal.split('-'); startDate = new Date(year, month - 1, 1); endDate = new Date(year, month, 0, 23, 59, 59, 999); } 
+                    const transactionsInPeriod = App.state.transactions.filter(t => { const tDate = new Date(t.date); return tDate >= startDate && tDate <= endDate; }); 
+                    const wasteInPeriod = App.state.wasteLog.filter(w => { const wDate = new Date(w.date); return wDate >= startDate && wDate <= endDate; }); 
+                    
+                    let reportHTML = `<h3>تقرير ${type === 'daily' ? 'يومي' : 'شهري'} للفترة من ${startDate.toLocaleDateString('ar-EG')} إلى ${endDate.toLocaleDateString('ar-EG')}</h3>`; 
+                    
+                    let productsSection = `<div class="report-section"><h4>1. قسم الإنتاج الجاهز والمبيعات</h4><table class="data-table"><thead><tr><th>المنتج</th><th>رصيد افتتاحي</th><th>إنتاج (+)</th><th>مبيعات (-)</th><th>هدر (-)</th><th>رصيد ختامي</th></tr></thead><tbody>`; 
+                    App.state.finishedProducts.forEach(product => { 
+                        const productions = transactionsInPeriod.filter(t => t.type === 'production' && t.itemId === product.id); 
+                        const sales = transactionsInPeriod.filter(t => t.type === 'sale' && t.itemId === product.id); 
+                        const waste = wasteInPeriod.filter(w => w.type === 'product' && w.itemId === product.id); 
+                        const totalProduction = productions.reduce((sum, t) => sum + t.quantity, 0); 
+                        const totalSales = sales.reduce((sum, t) => sum + t.quantity, 0); 
+                        const totalWaste = waste.reduce((sum, w) => sum + w.quantity, 0); 
+                        const closingBalance = product.stock; 
+                        const openingBalance = closingBalance - totalProduction + totalSales + totalWaste; 
+                        productsSection += `<tr>
+                                                <td data-label="المنتج">${product.name} (${product.unit})</td>
+                                                <td data-label="رصيد افتتاحي">${openingBalance.toFixed(2)}</td>
+                                                <td data-label="إنتاج (+)">${totalProduction.toFixed(2)}</td>
+                                                <td data-label="مبيعات (-)">${totalSales.toFixed(2)}</td>
+                                                <td data-label="هدر (-)">${totalWaste.toFixed(2)}</td>
+                                                <td data-label="رصيد ختامي"><strong>${closingBalance.toFixed(2)}</strong></td>
+                                            </tr>`; 
+                    }); 
+                    productsSection += `</tbody></table></div>`; 
+                    reportHTML += productsSection; 
+                    
+                    let rawMaterialsSection = `<div class="report-section"><h4>2. قسم المواد الخام</h4><table class="data-table"><thead><tr><th>المادة الخام</th><th>رصيد افتتاحي</th><th>مستخدم (-)</th><th>هدر (-)</th><th>رصيد ختامي</th></tr></thead><tbody>`; 
+                    App.state.rawMaterials.forEach(rm => { 
+                        let totalUsed = 0; 
+                        transactionsInPeriod.forEach(t => { if (t.type === 'production' && t.rawMaterialsUsed) { const used = t.rawMaterialsUsed.find(usedRm => usedRm.rawMaterialId === rm.id); if (used) totalUsed += used.quantity; } }); 
+                        const waste = wasteInPeriod.filter(w => w.type === 'raw' && w.itemId === rm.id); 
+                        const totalWaste = waste.reduce((sum, w) => sum + w.quantity, 0); 
+                        const closingBalance = rm.stock; 
+                        const openingBalance = closingBalance + totalUsed + totalWaste; 
+                        rawMaterialsSection += `<tr>
+                                                    <td data-label="المادة الخام">${rm.name} (${rm.unit})</td>
+                                                    <td data-label="رصيد افتتاحي">${openingBalance.toFixed(2)}</td>
+                                                    <td data-label="مستخدم (-)">${totalUsed.toFixed(2)}</td>
+                                                    <td data-label="هدر (-)">${totalWaste.toFixed(2)}</td>
+                                                    <td data-label="رصيد ختامي"><strong>${closingBalance.toFixed(2)}</strong></td>
+                                                </tr>`; 
+                    }); 
+                    rawMaterialsSection += `</tbody></table></div>`; 
+                    reportHTML += rawMaterialsSection; 
+                    
+                    let sparePartsSection = `<div class="report-section"><h4>3. قسم قطع الغيار</h4><table class="data-table"><thead><tr><th>قطعة الغيار</th><th>رصيد افتتاحي</th><th>هدر (-)</th><th>رصيد ختامي</th></tr></thead><tbody>`; 
+                    App.state.spareParts.forEach(sp => { 
+                        const waste = wasteInPeriod.filter(w => w.type === 'spare' && w.itemId === sp.id); 
+                        const totalWaste = waste.reduce((sum, w) => sum + w.quantity, 0); 
+                        const closingBalance = sp.stock; 
+                        const openingBalance = closingBalance + totalWaste; 
+                        sparePartsSection += `<tr>
+                                                <td data-label="قطعة الغيار">${sp.name} (${sp.unit})</td>
+                                                <td data-label="رصيد افتتاحي">${openingBalance.toFixed(2)}</td>
+                                                <td data-label="هدر (-)">${totalWaste.toFixed(2)}</td>
+                                                <td data-label="رصيد ختامي"><strong>${closingBalance.toFixed(2)}</strong></td>
+                                              </tr>`; 
+                    }); 
+                    sparePartsSection += `</tbody></table></div>`; 
+                    reportHTML += sparePartsSection; 
+                    
+                    outputDiv.innerHTML = reportHTML; 
+                }
             },
+            // --- (((( نهاية تعديل دالة التقارير )))) ---
+
              settings: {
                  exportData() { const dataStr = JSON.stringify(App.state, null, 2); const dataBlob = new Blob([dataStr], {type: "application/json"}); const dataUrl = URL.createObjectURL(dataBlob); const exportFileDefaultName = `saha_inventory_backup_${new Date().toISOString().slice(0,10)}.json`; const linkElement = document.createElement('a'); linkElement.href = dataUrl; linkElement.download = exportFileDefaultName; document.body.appendChild(linkElement); linkElement.click(); document.body.removeChild(linkElement); URL.revokeObjectURL(dataUrl); Swal.fire('تم!', 'جاري تحميل ملف النسخة الاحتياطية.', 'success'); },
                  importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const newState = JSON.parse(e.target.result); if ('rawMaterials' in newState && 'finishedProducts' in newState) { Swal.fire({ title: 'تأكيد الاستيراد', text: "سيتم استبدال جميع البيانات الحالية بالبيانات الموجودة في الملف. هل أنت متأكد؟ (هذا لا يمكن التراجع عنه!)", icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، استورد البيانات!', cancelButtonText: 'إلغاء' }).then(async (result) => { if (result.isConfirmed) { Swal.fire({ title: 'جاري الاستيراد...', html: 'الرجاء الانتظار، قد يستغرق هذا بعض الوقت...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); const batch = writeBatch(App.db); for (const key in SHARED_COLLECTIONS) { const colName = SHARED_COLLECTIONS[key]; const querySnapshot = await getDocs(collection(App.db, colName)); querySnapshot.forEach(doc => batch.delete(doc.ref)); } await batch.commit(); const importBatch = writeBatch(App.db); Object.keys(SHARED_COLLECTIONS).forEach(stateKey => { const collectionNameFirebase = SHARED_COLLECTIONS[stateKey]; if(newState[stateKey]) { newState[stateKey].forEach(item => { const { id, ...data } = item; const docRef = id ? doc(App.db, collectionNameFirebase, id) : doc(collection(App.db, collectionNameFirebase)); importBatch.set(docRef, data); }); } }); await importBatch.commit(); Swal.fire('نجاح!', 'تم استيراد البيانات بنجاح.', 'success'); } }); } else { throw new Error('Invalid file format'); } } catch (error) { Swal.fire('خطأ', 'الملف غير صالح أو تالف.', 'error'); } finally { event.target.value = ''; } }; reader.readAsText(file); },
@@ -466,34 +697,27 @@
                   console.error("App.init error:", e);
                 }
                 
-                // --- (((( هذا هو الإصلاح الرئيسي )))) ---
-                // البحث عن العناصر بالأسماء الصحيحة لإخفاء شاشة التحميل
-                var loaderEl = document.querySelector('#loading-screen'); // <-- تم التصحيح
+                // --- الإصلاح الرئيسي (بقى كما هو) ---
+                var loaderEl = document.querySelector('#loading-screen'); 
                 if (loaderEl) { 
                     loaderEl.classList.add('hidden'); 
                 }
                 
-                var mainEl = document.querySelector('#app-container'); // <-- تم التصحيح
+                var mainEl = document.querySelector('#app-container'); 
                 if (mainEl) { 
                     mainEl.classList.remove('hidden'); 
                 }
-                // --- (((( نهاية الإصلاح )))) ---
+                // --- نهاية الإصلاح ---
 
               } catch (error) {
                 console.error("Auth error:", error);
                 
-                // إخفاء شاشة التحميل حتى لو حدث خطأ
-                var loaderEl2 = document.querySelector('#loading-screen'); // <-- تم التصحيح
+                var loaderEl2 = document.querySelector('#loading-screen'); 
                 if (loaderEl2) { loaderEl2.classList.add('hidden'); }
 
-                // استخدام SweetAlert بدلاً من alert العادية
                 Swal.fire('خطأ في المصادقة', 'فشل تسجيل الدخول المجهول. تأكد من تفعيله في Firebase Console.', 'error');
               }
             });
-            
-            // --- (((( هذا هو الإصلاح الثاني )))) ---
-            // --- تم حذف الكود المكرر والخاطئ من هنا ---
-            // --- (((( نهاية الإصلاح )))) ---
 
         } catch (e) {
             console.error("Firebase initialization failed:", e);
