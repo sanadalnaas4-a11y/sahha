@@ -589,13 +589,11 @@
             rawMaterials: {
                 async add() { const { value: formValues } = await Swal.fire({ title: 'إضافة مادة خام جديدة', html: `<input id="swal-name" class="swal2-input" placeholder="اسم المادة" required><input id="swal-supplier" class="swal2-input" placeholder="المورد (اختياري)"><input id="swal-unit" class="swal2-input" placeholder="وحدة القياس (مثال: قطعة, لتر)"><input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الأولية" value="0" min="0"><input id="swal-threshold" type="number" class="swal2-input" placeholder="حد التنبيه (الكمية الأدنى)" value="0" min="0">`, focusConfirm: false, confirmButtonText: 'إضافة', cancelButtonText: 'إلغاء', showCancelButton: true, preConfirm: () => { const name = document.getElementById('swal-name').value; if (!name) { Swal.showValidationMessage(`اسم المادة مطلوب`); return false; } return { name: name, supplier: document.getElementById('swal-supplier').value, unit: document.getElementById('swal-unit').value, stock: parseFloat(document.getElementById('swal-stock').value) || 0, threshold: parseFloat(document.getElementById('swal-threshold').value) || 0, } } }); if (formValues) { try { await addDoc(collection(App.db, SHARED_COLLECTIONS.rawMaterials), formValues); Swal.fire('تم!', 'تمت إضافة المادة الخام بنجاح.', 'success'); } catch (e) { console.error("Error adding document: ", e); Swal.fire('خطأ', 'لم نتمكن من إضافة المادة.', 'error'); } } },
                 
-                // *** تعديل: إصلاح الخطأ المطبعي swal-unit ***
                 async edit(id) { 
                     const item = App.state.rawMaterials.find(i => i.id === id); 
                     if (!item) return; 
                     const { value: formValues } = await Swal.fire({ 
                         title: 'تعديل مادة خام', 
-                        // تم تصحيح 'swال-unit' إلى 'swal-unit'
                         html: `<input id="swal-name" class="swal2-input" placeholder="اسم المادة" value="${item.name}" required><input id="swal-supplier" class="swal2-input" placeholder="المورد (اختياري)" value="${item.supplier || ''}"><input id="swal-unit" class="swal2-input" placeholder="وحدة القياس" value="${item.unit}"><input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الحالية" value="${item.stock}" min="0"><input id="swal-threshold" type="number" class="swal2-input" placeholder="حد التنبيه" value="${item.threshold}" min="0">`, 
                         focusConfirm: false, 
                         confirmButtonText: 'حفظ التعديلات', 
@@ -607,7 +605,7 @@
                             return { 
                                 name: name, 
                                 supplier: document.getElementById('swal-supplier').value, 
-                                unit: document.getElementById('swal-unit').value, // <-- هذا السطر كان يسبب المشكلة
+                                unit: document.getElementById('swal-unit').value, 
                                 stock: parseFloat(document.getElementById('swal-stock').value) || 0, 
                                 threshold: parseFloat(document.getElementById('swal-threshold').value) || 0, 
                             } 
@@ -623,7 +621,6 @@
                         } 
                     } 
                 },
-                // *** نهاية التعديل ***
 
                 delete(id) { Swal.fire({ title: 'هل أنت متأكد؟', text: "سيتم حذف هذه المادة الخام نهائيًا!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'نعم، احذفه!', cancelButtonText: 'إلغاء' }).then(async (result) => { if (result.isConfirmed) { try { await deleteDoc(doc(App.db, SHARED_COLLECTIONS.rawMaterials, id)); Swal.fire('تم الحذف!', 'تم حذف المادة الخام.', 'success'); } catch (e) { console.error("Error deleting document: ", e); Swal.fire('خطأ', 'لم نتمكن من حذف المادة.', 'error'); } } }); }
             },
@@ -637,14 +634,14 @@
                 async edit(id) { const item = App.state.finishedProducts.find(i => i.id === id); if (!item) return; const { value: formValues } = await Swal.fire({ title: 'تعديل منتج جاهز', html: `<input id="swal-name" class="swal2-input" placeholder="اسم المنتج" value="${item.name}" required><input id="swal-unit" class="swal2-input" placeholder="وحدة القياس" value="${item.unit}"><input id="swal-stock" type="number" class="swal2-input" placeholder="الكمية الحالية" value="${item.stock}" min="0">`, focusConfirm: false, confirmButtonText: 'حفظ التعديلات', cancelButtonText: 'إلغاء', showCancelButton: true, preConfirm: () => { const name = document.getElementById('swal-name').value; if (!name) { Swal.showValidationMessage(`اسم المنتج مطلوب`); return false; } return { name: name, unit: document.getElementById('swal-unit').value, stock: parseFloat(document.getElementById('swal-stock').value) || 0, } } }); if (formValues) { try { await setDoc(doc(App.db, SHARED_COLLECTIONS.finishedProducts, id), formValues, { merge: true }); Swal.fire('تم!', 'تم تحديث المنتج بنجاح.', 'success'); } catch (e) { Swal.fire('خطأ', 'لم نتمكن من تحديث المنتج.', 'error'); } } },
                 delete(id) { Swal.fire({ title: 'هل أنت متأكد؟', text: "سيتم حذف هذا المنتج نهائيًا!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'نعم، احذفه!', cancelButtonText: 'إلغاء' }).then(async (result) => { if (result.isConfirmed) { try { await deleteDoc(doc(App.db, SHARED_COLLECTIONS.finishedProducts, id)); Swal.fire('تم الحذف!', 'تم حذف المنتج.', 'success'); } catch (e) { Swal.fire('خطأ', 'لم نتمكن من حذف المنتج.', 'error'); } } }); },
                 async addProduction(productId) { const product = App.state.finishedProducts.find(p => p.id === productId); if (!product) return; if (!product.bom || product.bom.length === 0) { Swal.fire('خطأ', 'لا يمكن الإنتاج. لم يتم تعريف مكونات (BOM) لهذا المنتج.', 'error'); return; } const { value: qty } = await Swal.fire({ title: `إنتاج ${product.name}`, input: 'number', inputLabel: `أدخل الكمية المراد إنتاجها`, inputPlaceholder: 'مثال: 50', showCancelButton: true, confirmButtonText: 'بدء الإنتاج', cancelButtonText: 'إلغاء', inputValidator: (value) => { if (!value || value <= 0) { return 'الرجاء إدخال كمية صحيحة!' } } }); if (qty) { const quantity = parseFloat(qty); let canProduce = true; const rawMaterialsUsed = []; for (const item of product.bom) { const rawMaterial = App.state.rawMaterials.find(rm => rm.id === item.rawMaterialId); const required = item.quantity * quantity; if (!rawMaterial || rawMaterial.stock < required) { canProduce = false; Swal.fire('نقص في المخزون!', `لا توجد كمية كافية من "${rawMaterial ? rawMaterial.name : 'مادة محذوفة'}". المطلوب: ${required}, المتاح: ${rawMaterial ? rawMaterial.stock : 0}.`, 'warning'); break; } rawMaterialsUsed.push({ rawMaterialId: item.rawMaterialId, quantity: required, rawMaterialName: rawMaterial.name }); } if (canProduce) { try { const batch = writeBatch(App.db); rawMaterialsUsed.forEach(used => { const rmRef = doc(App.db, SHARED_COLLECTIONS.rawMaterials, used.rawMaterialId); const rawMaterial = App.state.rawMaterials.find(rm => rm.id === used.rawMaterialId); batch.update(rmRef, { stock: rawMaterial.stock - used.quantity }); }); const productRef = doc(App.db, SHARED_COLLECTIONS.finishedProducts, productId); batch.update(productRef, { stock: product.stock + quantity }); const transColRef = collection(App.db, SHARED_COLLECTIONS.transactions); 
-                // *** تعديل: إضافة ID مميز لـ transaction ***
+                /* *** تعديل: إضافة ID مميز لـ transaction *** */
                 const newTransRef = doc(transColRef); // إنشاء مرجع مستند جديد
                 batch.set(newTransRef, { id: newTransRef.id, date: new Date().toISOString(), type: 'production', itemId: productId, itemName: product.name, quantity: quantity, rawMaterialsUsed: rawMaterialsUsed }); 
-                // *** نهاية التعديل ***
-                async addProduction(productId) { /* ... existing code ... */ }
+                /* *** نهاية التعديل *** */
+                await batch.commit(); Swal.fire('تم الإنتاج!', `تمت إضافة ${quantity} من ${product.name}.`, 'success'); } catch (e) { console.error("Error committing production batch: ", e); Swal.fire('خطأ', 'حدث خطأ أثناء تسجيل الإنتاج.', 'error'); } } } }
             },
             
-            <!-- *** تعديل: إضافة دوال التعديل والحذف للمبيعات مع تتبع أخطاء مفصل *** -->
+            /* *** تعديل: إضافة دوال التعديل والحذف للمبيعات مع تتبع أخطاء مفصل *** */
             sales: {
                 async record() { 
                     const productId = document.getElementById('salesProductSelect').value; 
@@ -778,7 +775,7 @@
                     });
                 }
             },
-            <!-- *** نهاية التعديل *** -->
+            /* *** نهاية التعديل *** */
 
             bom: {
                 showBOMForProduct(productId) { const bomDetailsDiv = document.getElementById('bomDetails'); if (!productId) { bomDetailsDiv.classList.add('hidden'); return; } const product = App.state.finishedProducts.find(p => p.id === productId); document.getElementById('bomProductName').textContent = product.name; App.render.bomList(productId); App.render.bomRawMaterialSelect(); bomDetailsDiv.classList.remove('hidden'); },
@@ -788,10 +785,10 @@
             waste: {
                 async record() { const type = document.getElementById('wasteTypeSelect').value; const itemId = document.getElementById('wasteItemSelect').value; const quantity = parseFloat(document.getElementById('wasteQty').value); if(!itemId || !quantity || quantity <= 0) { Swal.fire('خطأ', 'الرجاء اختيار صنف وإدخال كمية صحيحة.', 'error'); return; } let items, collectionNameFirebase, item, itemName, typeAr; if(type === 'raw') { items = App.state.rawMaterials; collectionNameFirebase = SHARED_COLLECTIONS.rawMaterials; typeAr = 'مادة خام'; } else if(type === 'spare') { items = App.state.spareParts; collectionNameFirebase = SHARED_COLLECTIONS.spareParts; typeAr = 'قطعة غيار'; } else { items = App.state.finishedProducts; collectionNameFirebase = SHARED_COLLECTIONS.finishedProducts; typeAr = 'منتج جاهز'; } item = items.find(i => i.id === itemId); itemName = item ? item.name : 'صنف محذوف'; if (!item || item.stock < quantity) { Swal.fire('خطأ', `الكمية المفقودة أكبر من الكمية المتاحة في المخزون (${item.stock}).`, 'error'); return; } try { const batch = writeBatch(App.db); const itemRef = doc(App.db, collectionNameFirebase, itemId); batch.update(itemRef, { stock: item.stock - quantity }); 
                 const wasteColRef = collection(App.db, SHARED_COLLECTIONS.wasteLog); 
-                // *** تعديل: إضافة ID مميز لـ waste ***
+                /* *** تعديل: إضافة ID مميز لـ waste *** */
                 const newWasteRef = doc(wasteColRef);
                 batch.set(newWasteRef, { id: newWasteRef.id, date: new Date().toISOString(), type, typeAr, itemId, itemName, quantity }); 
-                // *** نهاية التعديل ***
+                /* *** نهاية التعديل *** */
                 await batch.commit(); document.getElementById('wasteQty').value = ''; Swal.fire('تم التسجيل!', 'تم تسجيل الهدر وخصمه من المخزون.', 'success'); } catch (e) { console.error("Error committing waste batch: ", e); Swal.fire('خطأ', 'حدث خطأ أثناء تسجيل الهدر.', 'error'); } }
             },
             
@@ -935,5 +932,4 @@
     </script>
 </body>
 </html>
-
 
