@@ -641,10 +641,10 @@
                 const newTransRef = doc(transColRef); // إنشاء مرجع مستند جديد
                 batch.set(newTransRef, { id: newTransRef.id, date: new Date().toISOString(), type: 'production', itemId: productId, itemName: product.name, quantity: quantity, rawMaterialsUsed: rawMaterialsUsed }); 
                 // *** نهاية التعديل ***
-                await batch.commit(); Swal.fire('تم الإنتاج!', `تمت إضافة ${quantity} من ${product.name}.`, 'success'); } catch (e) { console.error("Error committing production batch: ", e); Swal.fire('خطأ', 'حدث خطأ أثناء تسجيل الإنتاج.', 'error'); } } } }
+                async addProduction(productId) { /* ... existing code ... */ }
             },
             
-            // *** تعديل: إضافة دوال التعديل والحذف للمبيعات ***
+            <!-- *** تعديل: إضافة دوال التعديل والحذف للمبيعات مع تتبع أخطاء مفصل *** -->
             sales: {
                 async record() { 
                     const productId = document.getElementById('salesProductSelect').value; 
@@ -657,26 +657,30 @@
                         const productRef = doc(App.db, SHARED_COLLECTIONS.finishedProducts, productId); 
                         batch.update(productRef, { stock: product.stock - quantity }); 
                         const transColRef = collection(App.db, SHARED_COLLECTIONS.transactions); 
-                        // *** تعديل: إضافة ID مميز لـ transaction ***
-                        const newTransRef = doc(transColRef); // إنشاء مرجع مستند جديد
+                        const newTransRef = doc(transColRef); 
                         batch.set(newTransRef, { id: newTransRef.id, date: new Date().toISOString(), type: 'sale', itemId: productId, itemName: product.name, quantity: quantity }); 
-                        // *** نهاية التعديل ***
                         await batch.commit(); 
                         document.getElementById('salesQty').value = ''; 
                         document.getElementById('salesProductSelect').value = ''; 
                         Swal.fire('تم البيع!', `تم خصم ${quantity} من ${product.name}.`, 'success'); 
                     } catch (e) { 
                         console.error("Error committing sale batch: ", e); 
-                        Swal.fire('خطأ', 'حدث خطأ أثناء تسجيل البيع.', 'error'); 
+                        Swal.fire('خطأ', `حدث خطأ أثناء تسجيل البيع: ${e.message}`, 'error'); 
                     } 
                 },
 
                 async edit(transactionId) {
+                    console.log("محاولة تعديل حركة بيع ID:", transactionId);
+                    if (!transactionId || typeof transactionId !== 'string') {
+                        Swal.fire('خطأ', 'معرف الحركة غير صالح أو مفقود.', 'error');
+                        return;
+                    }
+
                     const trans = App.state.transactions.find(t => t.id === transactionId);
-                    if (!trans) { Swal.fire('خطأ', 'لم يتم العثور على حركة البيع.', 'error'); return; }
+                    if (!trans) { Swal.fire('خطأ', 'لم يتم العثور على حركة البيع في البيانات الحالية.', 'error'); return; }
                     
                     const product = App.state.finishedProducts.find(p => p.id === trans.itemId);
-                    if (!product) { Swal.fire('خطأ', 'المنتج المرتبط بهذه الحركة غير موجود.', 'error'); return; }
+                    if (!product) { Swal.fire('خطأ', 'المنتج المرتبط بهذه الحركة غير موجود (ربما تم حذفه).', 'error'); return; }
 
                     const { value: formValues } = await Swal.fire({
                         title: `تعديل بيع: ${product.name}`,
@@ -698,7 +702,7 @@
                     if (formValues) {
                         const { newQuantity } = formValues;
                         const oldQuantity = trans.quantity;
-                        const diff = newQuantity - oldQuantity; // الفرق لحسابه من المخزون
+                        const diff = newQuantity - oldQuantity; 
 
                         if (product.stock < diff) {
                             Swal.fire('خطأ في المخزون', `لا يمكن تعديل الكمية. المخزون الحالي (${product.stock}) لا يكفي لتغطية الفرق (${diff}).`, 'error');
@@ -708,24 +712,33 @@
                         try {
                             Swal.fire({ title: 'جاري الحفظ...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
                             const batch = writeBatch(App.db);
+                            
                             const transRef = doc(App.db, SHARED_COLLECTIONS.transactions, transactionId);
+                            console.log("Updating transaction ref:", transRef.path);
                             batch.update(transRef, { quantity: newQuantity });
                             
                             const productRef = doc(App.db, SHARED_COLLECTIONS.finishedProducts, product.id);
+                            console.log("Updating product ref:", productRef.path);
                             batch.update(productRef, { stock: product.stock - diff });
 
                             await batch.commit();
                             Swal.fire('تم!', 'تم تعديل حركة البيع بنجاح.', 'success');
                         } catch (e) {
-                            console.error("Error updating sale: ", e);
-                            Swal.fire('خطأ', 'لم نتمكن من تعديل حركة البيع.', 'error');
+                            console.error("Error updating sale batch: ", e);
+                            Swal.fire('خطأ', `لم نتمكن من تعديل حركة البيع. الخطأ: ${e.message}`, 'error');
                         }
                     }
                 },
 
                 async delete(transactionId) {
+                    console.log("محاولة حذف حركة بيع ID:", transactionId);
+                    if (!transactionId || typeof transactionId !== 'string') {
+                        Swal.fire('خطأ', 'معرف الحركة غير صالح أو مفقود.', 'error');
+                        return;
+                    }
+
                     const trans = App.state.transactions.find(t => t.id === transactionId);
-                    if (!trans) { Swal.fire('خطأ', 'لم يتم العثور على حركة البيع.', 'error'); return; }
+                    if (!trans) { Swal.fire('خطأ', 'لم يتم العثور على حركة البيع في البيانات الحالية.', 'error'); return; }
 
                     Swal.fire({
                         title: 'هل أنت متأكد؟',
@@ -744,25 +757,28 @@
                                 const batch = writeBatch(App.db);
 
                                 const transRef = doc(App.db, SHARED_COLLECTIONS.transactions, transactionId);
+                                console.log("Deleting transaction ref:", transRef.path);
                                 batch.delete(transRef);
 
-                                // إرجاع الكمية للمخزون فقط إذا كان المنتج مازال موجود
                                 if (product) {
                                     const productRef = doc(App.db, SHARED_COLLECTIONS.finishedProducts, product.id);
+                                    console.log("Restoring stock to product ref:", productRef.path);
                                     batch.update(productRef, { stock: product.stock + trans.quantity });
+                                } else {
+                                    console.warn("Product not found for transaction, stock not restored.");
                                 }
 
                                 await batch.commit();
                                 Swal.fire('تم الحذف!', 'تم حذف حركة البيع وإرجاع الكمية للمخزون.', 'success');
                             } catch (e) {
-                                console.error("Error deleting sale: ", e);
-                                Swal.fire('خطأ', 'لم نتمكن من حذف حركة البيع.', 'error');
+                                console.error("Error deleting sale batch: ", e);
+                                Swal.fire('خطأ', `لم نتمكن من حذف حركة البيع. الخطأ: ${e.message}`, 'error');
                             }
                         }
                     });
                 }
             },
-            // *** نهاية التعديل ***
+            <!-- *** نهاية التعديل *** -->
 
             bom: {
                 showBOMForProduct(productId) { const bomDetailsDiv = document.getElementById('bomDetails'); if (!productId) { bomDetailsDiv.classList.add('hidden'); return; } const product = App.state.finishedProducts.find(p => p.id === productId); document.getElementById('bomProductName').textContent = product.name; App.render.bomList(productId); App.render.bomRawMaterialSelect(); bomDetailsDiv.classList.remove('hidden'); },
@@ -919,4 +935,5 @@
     </script>
 </body>
 </html>
+
 
