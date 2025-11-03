@@ -185,7 +185,8 @@
         
         /* إصلاح خطوط PDF */
         .pdf-export-font {
-            font-family: 'Arial', sans-serif !important;
+            /* هذا الكلاس لم يعد مستخدماً للخطوط، ولكن سنبقيه للتحكم بالخلفية */
+            background-color: #ffffff !important;
         }
 
         
@@ -1086,11 +1087,9 @@
                  importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const newState = JSON.parse(e.target.result); if ('rawMaterials' in newState && 'finishedProducts' in newState) { Swal.fire({ title: 'تأكيد الاستيراد', text: "سيتم استبدال جميع البيانات الحالية بالبيانات الموجودة في الملف. هل أنت متأكد؟ (هذا لا يمكن التراجع عنه!)", icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، استورد البيانات!', cancelButtonText: 'إلغاء' }).then(async (result) => { if (result.isConfirmed) { Swal.fire({ title: 'جاري الاستيراد...', html: 'الرجاء الانتظار، قد يستغرق هذا بعض الوقت...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); const batch = writeBatch(App.db); for (const key in SHARED_COLLECTIONS) { const colName = SHARED_COLLECTIONS[key]; const querySnapshot = await getDocs(collection(App.db, colName)); querySnapshot.forEach(doc => batch.delete(doc.ref)); } await batch.commit(); const importBatch = writeBatch(App.db); Object.keys(SHARED_COLLECTIONS).forEach(stateKey => { const collectionNameFirebase = SHARED_COLLECTIONS[stateKey]; if(newState[stateKey]) { newState[stateKey].forEach(item => { const { id, ...data } = item; const docRef = id ? doc(App.db, collectionNameFirebase, id) : doc(collection(App.db, collectionNameFirebase)); importBatch.set(docRef, data); }); } }); await importBatch.commit(); Swal.fire('نجاح!', 'تم استيراد البيانات بنجاح.', 'success'); } }); } else { throw new Error('Invalid file format'); } } catch (error) { Swal.fire('خطأ', 'الملف غير صالح أو تالف.', 'error'); } finally { event.target.value = ''; } }; reader.readAsText(file); },
                  async deleteAllData() { Swal.fire({ title: 'هل أنت متأكد تمامًا؟', html: `هذا الإجراء سيحذف <b>كل شيء</b> نهائيًا من قاعدة البيانات المشتركة.<br>اكتب "حذف" للتأكيد.`, icon: 'error', input: 'text', inputAttributes: { autocapitalize: 'off' }, showCancelButton: true, confirmButtonText: 'تأكيد الحذف', cancelButtonText: 'إلغاء', preConfirm: (value) => { if (value !== 'حذف') { Swal.showValidationMessage('الرجاء كتابة "حذف" بشكل صحيح للتأكيد.'); } } }).then(async (result) => { if (result.isConfirmed) { Swal.fire({ title: 'جاري الحذف...', html: 'الرجاء الانتظار...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); const batch = writeBatch(App.db); for (const key in SHARED_COLLECTIONS) { const colName = SHARED_COLLECTIONS[key]; const querySnapshot = await getDocs(collection(App.db, colName)); querySnapshot.forEach(doc => batch.delete(doc.ref)); } await batch.commit(); Swal.fire('تم الحذف!', 'تم حذف جميع البيانات بنجاح.', 'success'); } }); },
                  
-                 /* إصلاح دالة الطباعة PDF */
+                 /* إصلاح دالة الطباعة PDF: العودة إلى طريقة 'html2canvas' الصافية */
                  async printReport() {
                     const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-                    
                     const reportContent = document.getElementById('reportContent'); 
                     
                     const defaultText = reportContent.querySelector('p');
@@ -1101,25 +1100,41 @@
 
                     Swal.fire({ title: 'جاري تجهيز الـ PDF...', html: 'الرجاء الانتظار...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
-                    /* إصلاح خطوط PDF: 
-                       قم بتغيير الخط إلى 'Arial' قبل التصدير، ثم إرجاعه 
-                    */
-                    const originalFont = reportContent.style.fontFamily;
-                    reportContent.classList.add('pdf-export-font'); // تطبيق كلاس الخط الآمن
+                    // تطبيق خلفية بيضاء لضمان عدم وجود شفافية في لقطة الشاشة
+                    reportContent.classList.add('pdf-export-font'); 
 
                     try {
-                        await pdf.html(reportContent, {
-                            callback: function (doc) {
-                                doc.save(`report_${new Date().toISOString().slice(0,10)}.pdf`);
-                                reportContent.classList.remove('pdf-export-font'); // إزالة كلاس الخط الآمن
-                                Swal.close(); 
-                            },
-                            x: 15,
-                            y: 15,
-                            width: 565, 
-                            windowWidth: reportContent.scrollWidth, 
-                            autoPaging: 'text' 
+                        const canvas = await html2canvas(reportContent, {
+                            scale: 2, // زيادة الدقة
+                            useCORS: true, // للسماح بتحميل أي صور (لو وجدت)
+                            backgroundColor: '#ffffff' // تحديد خلفية بيضاء
                         });
+
+                        reportContent.classList.remove('pdf-export-font'); // إرجاع الوضع الطبيعي
+                        
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jsPDF({
+                            orientation: 'portrait',
+                            unit: 'pt',
+                            format: 'a4' // استخدام حجم A4
+                        });
+
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = pdf.internal.pageSize.getHeight();
+                        const imgWidth = canvas.width;
+                        const imgHeight = canvas.height;
+                        
+                        // حساب النسبة للحفاظ على أبعاد الصورة داخل صفحة A4
+                        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                        const imgX = (pdfWidth - imgWidth * ratio) / 2; // توسيط الصورة
+                        const imgY = 0;
+
+                        // إضافة الصورة للـ PDF
+                        pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+                        pdf.save(`report_${new Date().toISOString().slice(0,10)}.pdf`);
+                        
+                        Swal.close(); 
+
                     } catch (e) {
                         console.error("Error generating PDF:", e);
                         Swal.fire('خطأ', 'فشل تصدير التقرير.', 'error');
@@ -1129,7 +1144,7 @@
             }
         };
 
-        // --- Auth Handling ---
+        // --- Auth Handling (Modified for Anonymous Auth) ---
         try {
             console.log("Initializing Firebase...");
             const firebaseApp = initializeApp(firebaseConfig);
@@ -1148,23 +1163,27 @@
                 if (!user) {
                   console.log("No user, signing in anonymously...");
                   await signInAnonymously(auth);
-                  return; 
+                  return; // wait for next auth state change
                 }
                 
                 console.log("Anonymous user signed in:", user.uid);
                 
                 try {
+                  /* تأكد من أن App.init لا يتم استدعاؤها إلا مرة واحدة.
+                    الكود الأصلي كان يستدعيها مرتين.
+                  */
                   await App.init(db, user, auth);
                 } catch (e) {
                   console.error("App.init error:", e);
                 }
                 
-                var loaderEl = document.querySelector('#loading-screen'); 
+                // تم تصحيح الأخطاء هنا لاستخدام الأسماء الصحيحة
+                var loaderEl = document.querySelector('#loading-screen'); // تصحيح: كان loader
                 if (loaderEl) { 
                     loaderEl.classList.add('hidden'); 
                 }
                 
-                var mainEl = document.querySelector('#app-container'); 
+                var mainEl = document.querySelector('#app-container'); // تصحيح: كان mainPage
                 if (mainEl) { 
                     mainEl.classList.remove('hidden'); 
                 }
@@ -1172,7 +1191,7 @@
               } catch (error) {
                 console.error("Auth error:", error);
                 
-                var loaderEl2 = document.querySelector('#loading-screen'); 
+                var loaderEl2 = document.querySelector('#loading-screen'); // تصحيح: كان loader
                 if (loaderEl2) { loaderEl2.classList.add('hidden'); }
 
                 Swal.fire('خطأ في المصادقة', 'فشل تسجيل الدخول المجهول. تأكد من تفعيله في Firebase Console.', 'error');
