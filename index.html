@@ -182,6 +182,11 @@
         #textReportOutput .data-table td:before { 
             display: none; /* إخفاء data-label في الطباعة */
         }
+        
+        /* إصلاح خطوط PDF */
+        .pdf-export-font {
+            font-family: 'Arial', sans-serif !important;
+        }
 
         
         .hamburger, .close-btn { display: none; cursor: pointer; background: none; border: none; font-size: 2rem; z-index: 101; }
@@ -456,7 +461,7 @@
                     const target = e.target.closest('button'); 
                     if (target && target.dataset.id) { 
                         if (target.classList.contains('edit-sale-btn')) this.sales.edit(target.dataset.id); 
-                        if (target.classList.contains('delete-sale-btn')) this.sales.delete(target.dataset.id); 
+                        if (target.classList.contains('delete-sale-btn')) this.sales.delete(target.dataset.id, e.target.closest('tr')); 
                     } 
                 });
 
@@ -472,7 +477,7 @@
                     const target = e.target.closest('button'); 
                     if (target && target.dataset.id) { 
                         if (target.classList.contains('edit-waste-btn')) this.waste.edit(target.dataset.id); 
-                        if (target.classList.contains('delete-waste-btn')) this.waste.delete(target.dataset.id); 
+                        if (target.classList.contains('delete-waste-btn')) this.waste.delete(target.dataset.id, e.target.closest('tr')); 
                     } 
                 });
 
@@ -579,11 +584,14 @@
                     const salesTransactions = App.state.transactions.filter(t => t.type === 'sale').sort((a,b) => new Date(b.date) - new Date(a.date)); 
                     if (salesTransactions.length === 0) { tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">لا يوجد سجلات مبيعات.</td></tr>`; return; } 
                     tableBody.innerHTML = salesTransactions.map(log => { 
-                        const item = App.state.finishedProducts.find(i => i.id === log.itemId); 
+                        /* إصلاح: تم استخدام log.itemName بدلاً من البحث اليدوي
+                           هذا يمنع ظهور "منتج محذوف" إذا تم حذف المنتج ولكن الحركة مازالت موجودة
+                        */
+                        const itemName = log.itemName || (App.state.finishedProducts.find(i => i.id === log.itemId) ? App.state.finishedProducts.find(i => i.id === log.itemId).name : 'منتج محذوف');
                         const transactionId = log.id; 
-                        return `<tr>
+                        return `<tr data-transaction-id="${transactionId}">
                                     <td data-label="التاريخ">${new Date(log.date).toLocaleString('ar-EG')}</td>
-                                    <td data-label="اسم المنتج">${item ? item.name : 'منتج محذوف'}</td>
+                                    <td data-label="اسم المنتج">${itemName}</td>
                                     <td data-label="الكمية">${log.quantity}</td>
                                     <td class="actions">
                                         <div class="actions">
@@ -605,15 +613,25 @@
                     const wasteLogs = App.state.wasteLog.sort((a,b) => new Date(b.date) - new Date(a.date)); 
                     if(wasteLogs.length === 0) { tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">لا يوجد سجلات هدر.</td></tr>`; return; } 
                     tableBody.innerHTML = wasteLogs.map(log => { 
-                        let item; let typeAr; 
-                        if(log.type === 'raw') { item = App.state.rawMaterials.find(i => i.id === log.itemId); typeAr = 'مادة خام'; } 
-                        else if(log.type === 'spare') { item = App.state.spareParts.find(i => i.id === log.itemId); typeAr = 'قطعة غيار'; } 
-                        else { item = App.state.finishedProducts.find(i => i.id === log.itemId); typeAr = 'منتج جاهز'; } 
+                        /* إصلاح: تم استخدام log.itemName و log.typeAr
+                           هذا يمنع ظهور "صنف محذوف"
+                        */
+                        const typeAr = log.typeAr || (log.type === 'raw' ? 'مادة خام' : (log.type === 'spare' ? 'قطعة غيار' : 'منتج جاهز'));
+                        let itemName = log.itemName;
+                        if (!itemName) {
+                            let items;
+                            if(log.type === 'raw') items = App.state.rawMaterials;
+                            else if(log.type === 'spare') items = App.state.spareParts;
+                            else items = App.state.finishedProducts;
+                            const item = items.find(i => i.id === log.itemId);
+                            itemName = item ? item.name : 'صنف محذوف';
+                        }
+                        
                         const transactionId = log.id;
-                        return `<tr>
+                        return `<tr data-transaction-id="${transactionId}">
                                     <td data-label="التاريخ">${new Date(log.date).toLocaleString('ar-EG')}</td>
                                     <td data-label="نوع الصنف">${typeAr}</td>
-                                    <td data-label="اسم الصنف">${item ? item.name : 'صنف محذوف'}</td>
+                                    <td data-label="اسم الصنف">${itemName}</td>
                                     <td data-label="الكمية">${log.quantity}</td>
                                     <td class="actions">
                                         <div class="actions">
@@ -676,8 +694,7 @@
                 async addProduction(productId) { const product = App.state.finishedProducts.find(p => p.id === productId); if (!product) return; if (!product.bom || product.bom.length === 0) { Swal.fire('خطأ', 'لا يمكن الإنتاج. لم يتم تعريف مكونات (BOM) لهذا المنتج.', 'error'); return; } const { value: qty } = await Swal.fire({ title: `إنتاج ${product.name}`, input: 'number', inputLabel: `أدخل الكمية المراد إنتاجها`, inputPlaceholder: 'مثال: 50', showCancelButton: true, confirmButtonText: 'بدء الإنتاج', cancelButtonText: 'إلغاء', inputValidator: (value) => { if (!value || value <= 0) { return 'الرجاء إدخال كمية صحيحة!' } } }); if (qty) { const quantity = parseFloat(qty); let canProduce = true; const rawMaterialsUsed = []; for (const item of product.bom) { const rawMaterial = App.state.rawMaterials.find(rm => rm.id === item.rawMaterialId); const required = item.quantity * quantity; if (!rawMaterial || rawMaterial.stock < required) { canProduce = false; Swal.fire('نقص في المخزون!', `لا توجد كمية كافية من "${rawMaterial ? rawMaterial.name : 'مادة محذوفة'}". المطلوب: ${required}, المتاح: ${rawMaterial ? rawMaterial.stock : 0}.`, 'warning'); break; } rawMaterialsUsed.push({ rawMaterialId: item.rawMaterialId, quantity: required, rawMaterialName: rawMaterial.name }); } if (canProduce) { try { const batch = writeBatch(App.db); rawMaterialsUsed.forEach(used => { const rmRef = doc(App.db, SHARED_COLLECTIONS.rawMaterials, used.rawMaterialId); const rawMaterial = App.state.rawMaterials.find(rm => rm.id === used.rawMaterialId); batch.update(rmRef, { stock: rawMaterial.stock - used.quantity }); }); const productRef = doc(App.db, SHARED_COLLECTIONS.finishedProducts, productId); batch.update(productRef, { stock: product.stock + quantity }); 
                 
                 const transColRef = collection(App.db, SHARED_COLLECTIONS.transactions); 
-                const newTransRef = doc(transColRef); // إنشاء مرجع مستند جديد
-                /* إصلاح: تم إزالة id: newTransRef.id من داخل الكائن */
+                const newTransRef = doc(transColRef); 
                 batch.set(newTransRef, { date: new Date().toISOString(), type: 'production', itemId: productId, itemName: product.name, quantity: quantity, rawMaterialsUsed: rawMaterialsUsed }); 
                 
                 await batch.commit(); Swal.fire('تم الإنتاج!', `تمت إضافة ${quantity} من ${product.name}.`, 'success'); } catch (e) { console.error("Error committing production batch: ", e); Swal.fire('خطأ', 'حدث خطأ أثناء تسجيل الإنتاج.', 'error'); } } } }
@@ -697,7 +714,6 @@
                         
                         const transColRef = collection(App.db, SHARED_COLLECTIONS.transactions); 
                         const newTransRef = doc(transColRef); 
-                        /* إصلاح: تم إزالة id: newTransRef.id من داخل الكائن */
                         batch.set(newTransRef, { date: new Date().toISOString(), type: 'sale', itemId: productId, itemName: product.name, quantity: quantity }); 
                         
                         await batch.commit(); 
@@ -771,7 +787,8 @@
                     }
                 },
 
-                async delete(transactionId) {
+                /* إصلاح: تم إضافة rowElement للحذف الفوري من الواجهة */
+                async delete(transactionId, rowElement) {
                     console.log("محاولة حذف حركة بيع ID:", transactionId);
                     if (!transactionId || typeof transactionId !== 'string') {
                         Swal.fire('خطأ', 'معرف الحركة غير صالح أو مفقود.', 'error');
@@ -810,6 +827,10 @@
                                 }
 
                                 await batch.commit();
+                                
+                                /* إصلاح: إخفاء الصف فوراً بعد الحذف الناجح */
+                                if(rowElement) { rowElement.style.display = 'none'; }
+                                
                                 Swal.fire('تم الحذف!', 'تم حذف حركة البيع وإرجاع الكمية للمخزون.', 'success');
                             } catch (e) {
                                 console.error("Error deleting sale batch: ", e);
@@ -850,7 +871,6 @@
                         
                         const wasteColRef = collection(App.db, SHARED_COLLECTIONS.wasteLog); 
                         const newWasteRef = doc(wasteColRef);
-                        /* إصلاح: تم إزالة id: newWasteRef.id من داخل الكائن */
                         batch.set(newWasteRef, { date: new Date().toISOString(), type, typeAr, itemId, itemName, quantity }); 
                         
                         await batch.commit(); 
@@ -927,7 +947,8 @@
                     }
                 },
 
-                async delete(transactionId) {
+                /* إصلاح: تم إضافة rowElement للحذف الفوري من الواجهة */
+                async delete(transactionId, rowElement) {
                     console.log("محاولة حذف حركة هدر ID:", transactionId);
                     if (!transactionId || typeof transactionId !== 'string') {
                         Swal.fire('خطأ', 'معرف الحركة غير صالح أو مفقود.', 'error');
@@ -970,6 +991,10 @@
                                 }
 
                                 await batch.commit();
+
+                                /* إصلاح: إخفاء الصف فوراً بعد الحذف الناجح */
+                                if(rowElement) { rowElement.style.display = 'none'; }
+                                
                                 Swal.fire('تم الحذف!', 'تم حذف حركة الهدر وإرجاع الكمية للمخزون.', 'success');
                             } catch (e) {
                                 console.error("Error deleting waste batch: ", e);
@@ -1061,15 +1086,13 @@
                  importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const newState = JSON.parse(e.target.result); if ('rawMaterials' in newState && 'finishedProducts' in newState) { Swal.fire({ title: 'تأكيد الاستيراد', text: "سيتم استبدال جميع البيانات الحالية بالبيانات الموجودة في الملف. هل أنت متأكد؟ (هذا لا يمكن التراجع عنه!)", icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، استورد البيانات!', cancelButtonText: 'إلغاء' }).then(async (result) => { if (result.isConfirmed) { Swal.fire({ title: 'جاري الاستيراد...', html: 'الرجاء الانتظار، قد يستغرق هذا بعض الوقت...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); const batch = writeBatch(App.db); for (const key in SHARED_COLLECTIONS) { const colName = SHARED_COLLECTIONS[key]; const querySnapshot = await getDocs(collection(App.db, colName)); querySnapshot.forEach(doc => batch.delete(doc.ref)); } await batch.commit(); const importBatch = writeBatch(App.db); Object.keys(SHARED_COLLECTIONS).forEach(stateKey => { const collectionNameFirebase = SHARED_COLLECTIONS[stateKey]; if(newState[stateKey]) { newState[stateKey].forEach(item => { const { id, ...data } = item; const docRef = id ? doc(App.db, collectionNameFirebase, id) : doc(collection(App.db, collectionNameFirebase)); importBatch.set(docRef, data); }); } }); await importBatch.commit(); Swal.fire('نجاح!', 'تم استيراد البيانات بنجاح.', 'success'); } }); } else { throw new Error('Invalid file format'); } } catch (error) { Swal.fire('خطأ', 'الملف غير صالح أو تالف.', 'error'); } finally { event.target.value = ''; } }; reader.readAsText(file); },
                  async deleteAllData() { Swal.fire({ title: 'هل أنت متأكد تمامًا؟', html: `هذا الإجراء سيحذف <b>كل شيء</b> نهائيًا من قاعدة البيانات المشتركة.<br>اكتب "حذف" للتأكيد.`, icon: 'error', input: 'text', inputAttributes: { autocapitalize: 'off' }, showCancelButton: true, confirmButtonText: 'تأكيد الحذف', cancelButtonText: 'إلغاء', preConfirm: (value) => { if (value !== 'حذف') { Swal.showValidationMessage('الرجاء كتابة "حذف" بشكل صحيح للتأكيد.'); } } }).then(async (result) => { if (result.isConfirmed) { Swal.fire({ title: 'جاري الحذف...', html: 'الرجاء الانتظار...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); const batch = writeBatch(App.db); for (const key in SHARED_COLLECTIONS) { const colName = SHARED_COLLECTIONS[key]; const querySnapshot = await getDocs(collection(App.db, colName)); querySnapshot.forEach(doc => batch.delete(doc.ref)); } await batch.commit(); Swal.fire('تم الحذف!', 'تم حذف جميع البيانات بنجاح.', 'success'); } }); },
                  
-                 /* إصلاح دالة الطباعة باستخدام pdf.html() */
+                 /* إصلاح دالة الطباعة PDF */
                  async printReport() {
                     const { jsPDF } = window.jspdf;
                     const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
                     
-                    // استخدم العنصر الذي يحتوي على التنسيق الجيد
                     const reportContent = document.getElementById('reportContent'); 
                     
-                    // قم بتنظيف المخرجات قبل الطباعة (إزالة الرسالة الافتراضية إذا كانت موجودة)
                     const defaultText = reportContent.querySelector('p');
                     if (defaultText && defaultText.innerText.includes('اختر نوع التقرير')) {
                         Swal.fire('خطأ', 'الرجاء إنشاء تقرير أولاً قبل محاولة تصديره.', 'warning');
@@ -1078,27 +1101,29 @@
 
                     Swal.fire({ title: 'جاري تجهيز الـ PDF...', html: 'الرجاء الانتظار...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
-                    const originalBackgroundColor = reportContent.style.backgroundColor;
-                    reportContent.style.backgroundColor = 'white'; // تأكيد الخلفية بيضاء للطباعة
+                    /* إصلاح خطوط PDF: 
+                       قم بتغيير الخط إلى 'Arial' قبل التصدير، ثم إرجاعه 
+                    */
+                    const originalFont = reportContent.style.fontFamily;
+                    reportContent.classList.add('pdf-export-font'); // تطبيق كلاس الخط الآمن
 
                     try {
-                        // استخدام دالة .html() الجديدة
                         await pdf.html(reportContent, {
                             callback: function (doc) {
                                 doc.save(`report_${new Date().toISOString().slice(0,10)}.pdf`);
-                                reportContent.style.backgroundColor = originalBackgroundColor; // إرجاع اللون الأصلي
-                                Swal.close(); // إغلاق رسالة الانتظار
+                                reportContent.classList.remove('pdf-export-font'); // إزالة كلاس الخط الآمن
+                                Swal.close(); 
                             },
                             x: 15,
                             y: 15,
-                            width: 565, // عرض A4 (595) - هوامش (30)
-                            windowWidth: reportContent.scrollWidth, // لالتقاط الجداول العريضة
-                            autoPaging: 'text' // محاولة تقسيم الصفحات
+                            width: 565, 
+                            windowWidth: reportContent.scrollWidth, 
+                            autoPaging: 'text' 
                         });
                     } catch (e) {
                         console.error("Error generating PDF:", e);
                         Swal.fire('خطأ', 'فشل تصدير التقرير.', 'error');
-                        reportContent.style.backgroundColor = originalBackgroundColor; // إرجاع اللون عند الخطأ
+                        reportContent.classList.remove('pdf-export-font'); // إزالة الكلاس عند الخطأ
                     }
                 }
             }
